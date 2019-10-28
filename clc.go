@@ -57,8 +57,8 @@ type clcHeader struct { /* header1 of clc messages */
 
 // convert header fields to a string
 func (c *clcHeader) String() string {
-	headerFmt := "Eyecatcher: %s, type: %s, length: %d, version: %d, " +
-		"flag %d, rsvd: %d, path %d\n"
+	headerFmt := "%s (eyecatcher: %s, length: %d, version: %d, " +
+		"flag %d, rsvd: %d, path %d)"
 	var eye string
 	var typ string
 
@@ -86,7 +86,7 @@ func (c *clcHeader) String() string {
 	}
 
 	// construct string
-	return fmt.Sprintf(headerFmt, eye, typ, c.length, c.version, c.flag,
+	return fmt.Sprintf(headerFmt, typ, eye, c.length, c.version, c.flag,
 		c.rsvd, c.path)
 }
 
@@ -148,12 +148,20 @@ func (h *smcStreamFactory) New(
 	return &sstream.r
 }
 
+// print CLC info of stream
+func printCLC(s *smcStream, clc *clcHeader) {
+	clcFmt := "%s:%s -> %s:%s: %s\n"
+
+	fmt.Printf(clcFmt, s.net.Src(), s.transport.Src(), s.net.Dst(),
+		s.transport.Dst(), clc)
+}
+
 // parse smc stream
 func (s *smcStream) run() {
 	buf := make([]byte, 2048)
 	total := 0
 	skip := 0
-	var smc *clcHeader
+	var clc *clcHeader
 
 	for {
 		// read data into buffer and check EOF and errors
@@ -172,18 +180,17 @@ func (s *smcStream) run() {
 		}
 
 		// parse current CLC header
-		smc = parseCLCHeader(buf[skip:])
-		if smc == nil {
+		clc = parseCLCHeader(buf[skip:])
+		if clc == nil {
 			break
 		}
 
 		// print current header
-		fmt.Println("SMC flow:     ", s.net, s.transport)
-		fmt.Println("CLC Header:   ", smc)
+		printCLC(s, clc)
 
 		// skip to next header if handshake still active
-		skip += int(smc.length)
-		switch smc.typ {
+		skip += int(clc.length)
+		switch clc.typ {
 		case clcDecline, clcConfirm:
 			// handshake finished
 			break
