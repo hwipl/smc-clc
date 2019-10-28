@@ -152,26 +152,42 @@ func (h *smcStreamFactory) New(
 func (s *smcStream) run() {
 	buf := make([]byte, 2048)
 	total := 0
+	skip := 0
 	var smc *clcHeader
 
 	for {
+		// read data into buffer and check EOF and errors
 		n, err := s.r.Read(buf[total:])
-		total += n
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Println("Error reading stream:", err)
-		} else {
-			if total < clcHeaderLen {
-				continue
+		if err != nil {
+			if err != io.EOF {
+				log.Println("Error reading stream:", err)
 			}
-			smc = parseCLCHeader(buf)
 			break
 		}
-	}
-	if smc != nil {
-		fmt.Println("SMC flow:           ", s.net, s.transport)
-		fmt.Println("With CLC Header:    ", smc)
+		total += n
+
+		// wait for enough data for parsing next CLC header
+		if total-skip < clcHeaderLen {
+			continue
+		}
+
+		// parse current CLC header
+		smc = parseCLCHeader(buf[skip:])
+		if smc == nil {
+			break
+		}
+
+		// print current header
+		fmt.Println("SMC flow:     ", s.net, s.transport)
+		fmt.Println("CLC Header:   ", smc)
+
+		// skip to next header if handshake still active
+		skip += int(smc.length)
+		switch smc.typ {
+		case clcDecline, clcConfirm:
+			// handshake finished
+			break
+		}
 	}
 	tcpreader.DiscardBytesToEOF(&s.r)
 }
