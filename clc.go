@@ -33,14 +33,110 @@ var (
 )
 
 const (
-	clcHeaderLen = 8
+	// general
+	smcSystemIDLen = 8
+
+	// header/message lengths
+	clcHeaderLen  = 8
+	clcDeclineLen = 28
 
 	// clc message types
 	clcProposal = 0x01
 	clcAccept   = 0x02
 	clcConfirm  = 0x03
 	clcDecline  = 0x04
+
+	// decline diagnosis codes (linux)
+	clcDeclineMem        = 0x01010000 /* insufficient memory resources */
+	clcDeclineTimeout_CL = 0x02010000 /* timeout w4 QP confirm link */
+	clcDeclineTimeout_AL = 0x02020000 /* timeout w4 QP add link */
+	clcDeclineCnfErr     = 0x03000000 /* configuration error */
+	clcDeclinePeerNoSMC  = 0x03010000 /* peer did not indicate SMC */
+	clcDeclineIPSEC      = 0x03020000 /* IPsec usage */
+	clcDeclineNoSMCDev   = 0x03030000 /* no SMC device found (R or D) */
+	clcDeclineNoSMCDDev  = 0x03030001 /* no SMC-D device found */
+	clcDeclineNoSMCRDev  = 0x03030002 /* no SMC-R device found */
+	clcDeclineSMCDNoTalk = 0x03030003 /* SMC-D dev can't talk to peer */
+	clcDeclineModeUnsupp = 0x03040000 /* smc modes do not match (R or D) */
+	clcDeclineRMBE_EC    = 0x03050000 /* peer has eyecatcher in RMBE */
+	clcDeclineOptUnsupp  = 0x03060000 /* fastopen sockopt not supported */
+	clcDeclineDiffPrefix = 0x03070000 /* IP prefix / subnet mismatch */
+	clcDeclineGetVLANErr = 0x03080000 /* err to get vlan id of ip device */
+	clcDeclineISMVLANErr = 0x03090000 /* err to reg vlan id on ism dev */
+	clcDeclineSyncErr    = 0x04000000 /* synchronization error */
+	clcDeclinePeerDecl   = 0x05000000 /* peer declined during handshake */
+	clcDeclineInterr     = 0x09990000 /* internal error */
+	clcDeclineERR_RTok   = 0x09990001 /* rtoken handling failed */
+	clcDeclineERR_RdyLnk = 0x09990002 /* ib ready link failed */
+	clcDeclineERR_RegRMB = 0x09990003 /* reg rmb failed */
 )
+
+// CLC Decline Message
+type clcDeclineMsg struct {
+	hdr           *clcHeader
+	senderPeerID  [smcSystemIDLen]byte /* sender peer_id */
+	peerDiagnosis uint32               /* diagnosis information */
+	reserved      [4]byte
+	trailer       [4]byte /* eye catcher "SMCR" EBCDIC */
+}
+
+// convert CLC Decline Message to string
+func (d *clcDeclineMsg) String() string {
+	declineFmt := "Sender Peer ID: %s, Peer Diagnosis: %s"
+
+	// parse peer diagnosis code
+	var diag string
+	switch d.peerDiagnosis {
+	case clcDeclineMem:
+		diag = "insufficient memory resources"
+	case clcDeclineTimeout_CL:
+		diag = "timeout w4 QP confirm link"
+	case clcDeclineTimeout_AL:
+		diag = "timeout w4 QP add link"
+	case clcDeclineCnfErr:
+		diag = "configuration error"
+	case clcDeclinePeerNoSMC:
+		diag = "peer did not indicate SMC"
+	case clcDeclineIPSEC:
+		diag = "IPsec usage"
+	case clcDeclineNoSMCDev:
+		diag = "no SMC device found (R or D)"
+	case clcDeclineNoSMCDDev:
+		diag = "no SMC-D device found"
+	case clcDeclineNoSMCRDev:
+		diag = "no SMC-R device found"
+	case clcDeclineSMCDNoTalk:
+		diag = "SMC-D dev can't talk to peer"
+	case clcDeclineModeUnsupp:
+		diag = "smc modes do not match (R or D)"
+	case clcDeclineRMBE_EC:
+		diag = "peer has eyecatcher in RMBE"
+	case clcDeclineOptUnsupp:
+		diag = "fastopen sockopt not supported"
+	case clcDeclineDiffPrefix:
+		diag = "IP prefix / subnet mismatch"
+	case clcDeclineGetVLANErr:
+		diag = "err to get vlan id of ip device"
+	case clcDeclineISMVLANErr:
+		diag = "err to reg vlan id on ism dev"
+	case clcDeclineSyncErr:
+		diag = "synchronization error"
+	case clcDeclinePeerDecl:
+		diag = "peer declined during handshake"
+	case clcDeclineInterr:
+		diag = "internal error"
+	case clcDeclineERR_RTok:
+		diag = "rtoken handling failed"
+	case clcDeclineERR_RdyLnk:
+		diag = "ib ready link failed"
+	case clcDeclineERR_RegRMB:
+		diag = "reg rmb failed"
+	default:
+		diag = "Unknown"
+	}
+
+	return fmt.Sprintf(declineFmt, d.senderPeerID, diag)
+}
 
 // CLC header
 type clcHeader struct { /* header1 of clc messages */
@@ -99,6 +195,24 @@ func hasEyecatcher(buf []byte) bool {
 		return true
 	}
 	return false
+}
+
+// parse CLC Decline in buffer
+func parseCLCDecline(hdr *clcHeader, buf []byte) *clcDeclineMsg {
+	decline := clcDeclineMsg{}
+	decline.hdr = hdr
+
+	// parse message content
+	buf = buf[clcHeaderLen:]
+	copy(decline.senderPeerID[:], buf[:smcSystemIDLen])
+	buf = buf[smcSystemIDLen:]
+	decline.peerDiagnosis = binary.BigEndian.Uint32(buf[:4])
+	buf = buf[4:]
+	copy(decline.reserved[:], buf[:4])
+	buf = buf[4:]
+	copy(decline.trailer[:], buf[:4])
+
+	return &decline
 }
 
 // parse CLC header in buffer
@@ -174,6 +288,21 @@ func (s *smcStream) run() {
 		}
 		total += n
 
+		// wait for enough data for parsing CLC message
+		if clc != nil && total >= skip {
+			switch clc.typ {
+			case clcConfirm:
+				// handshake finished
+				break
+			case clcDecline:
+				decline := parseCLCDecline(clc,
+					buf[skip-clcDeclineLen:])
+				fmt.Println("   ", decline)
+				// handshake finished
+				break
+			}
+		}
+
 		// wait for enough data for parsing next CLC header
 		if total-skip < clcHeaderLen {
 			continue
@@ -190,11 +319,6 @@ func (s *smcStream) run() {
 
 		// skip to next header if handshake still active
 		skip += int(clc.length)
-		switch clc.typ {
-		case clcDecline, clcConfirm:
-			// handshake finished
-			break
-		}
 	}
 	tcpreader.DiscardBytesToEOF(&s.r)
 }
