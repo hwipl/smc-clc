@@ -48,8 +48,8 @@ const (
 
 	// decline diagnosis codes (linux)
 	clcDeclineMem        = 0x01010000 /* insufficient memory resources */
-	clcDeclineTimeout_CL = 0x02010000 /* timeout w4 QP confirm link */
-	clcDeclineTimeout_AL = 0x02020000 /* timeout w4 QP add link */
+	clcDeclineTimeoutCL  = 0x02010000 /* timeout w4 QP confirm link */
+	clcDeclineTimeoutAL  = 0x02020000 /* timeout w4 QP add link */
 	clcDeclineCnfErr     = 0x03000000 /* configuration error */
 	clcDeclinePeerNoSMC  = 0x03010000 /* peer did not indicate SMC */
 	clcDeclineIPSEC      = 0x03020000 /* IPsec usage */
@@ -58,7 +58,7 @@ const (
 	clcDeclineNoSMCRDev  = 0x03030002 /* no SMC-R device found */
 	clcDeclineSMCDNoTalk = 0x03030003 /* SMC-D dev can't talk to peer */
 	clcDeclineModeUnsupp = 0x03040000 /* smc modes do not match (R or D) */
-	clcDeclineRMBE_EC    = 0x03050000 /* peer has eyecatcher in RMBE */
+	clcDeclineRMBEEyeC   = 0x03050000 /* peer has eyecatcher in RMBE */
 	clcDeclineOptUnsupp  = 0x03060000 /* fastopen sockopt not supported */
 	clcDeclineDiffPrefix = 0x03070000 /* IP prefix / subnet mismatch */
 	clcDeclineGetVLANErr = 0x03080000 /* err to get vlan id of ip device */
@@ -66,9 +66,9 @@ const (
 	clcDeclineSyncErr    = 0x04000000 /* synchronization error */
 	clcDeclinePeerDecl   = 0x05000000 /* peer declined during handshake */
 	clcDeclineInterr     = 0x09990000 /* internal error */
-	clcDeclineERR_RTok   = 0x09990001 /* rtoken handling failed */
-	clcDeclineERR_RdyLnk = 0x09990002 /* ib ready link failed */
-	clcDeclineERR_RegRMB = 0x09990003 /* reg rmb failed */
+	clcDeclineErrRTok    = 0x09990001 /* rtoken handling failed */
+	clcDeclineErrRdyLnk  = 0x09990002 /* ib ready link failed */
+	clcDeclineErrRegRMB  = 0x09990003 /* reg rmb failed */
 )
 
 // CLC Decline Message
@@ -89,9 +89,9 @@ func (d *clcDeclineMsg) String() string {
 	switch d.peerDiagnosis {
 	case clcDeclineMem:
 		diag = "insufficient memory resources"
-	case clcDeclineTimeout_CL:
+	case clcDeclineTimeoutCL:
 		diag = "timeout w4 QP confirm link"
-	case clcDeclineTimeout_AL:
+	case clcDeclineTimeoutAL:
 		diag = "timeout w4 QP add link"
 	case clcDeclineCnfErr:
 		diag = "configuration error"
@@ -109,7 +109,7 @@ func (d *clcDeclineMsg) String() string {
 		diag = "SMC-D dev can't talk to peer"
 	case clcDeclineModeUnsupp:
 		diag = "smc modes do not match (R or D)"
-	case clcDeclineRMBE_EC:
+	case clcDeclineRMBEEyeC:
 		diag = "peer has eyecatcher in RMBE"
 	case clcDeclineOptUnsupp:
 		diag = "fastopen sockopt not supported"
@@ -125,11 +125,11 @@ func (d *clcDeclineMsg) String() string {
 		diag = "peer declined during handshake"
 	case clcDeclineInterr:
 		diag = "internal error"
-	case clcDeclineERR_RTok:
+	case clcDeclineErrRTok:
 		diag = "rtoken handling failed"
-	case clcDeclineERR_RdyLnk:
+	case clcDeclineErrRdyLnk:
 		diag = "ib ready link failed"
-	case clcDeclineERR_RegRMB:
+	case clcDeclineErrRegRMB:
 		diag = "reg rmb failed"
 	default:
 		diag = "Unknown"
