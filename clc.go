@@ -491,65 +491,78 @@ func printCLC(s *smcStream, clc *clcHeader) {
 
 // parse smc stream
 func (s *smcStream) run() {
-	buf := make([]byte, 2048)
-	total := 0
-	skip := 0
 	var clc *clcHeader
+	buf := make([]byte, 2048)
+	// get at least enough bytes for the CLC header
+	skip := clcHeaderLen
+	eof := false
+	total := 0
 
 	for {
-		// read data into buffer and check EOF and errors
-		n, err := s.r.Read(buf[total:])
-		if err != nil {
-			if err != io.EOF {
-				log.Println("Error reading stream:", err)
+		// try to read enough data into buffer and check EOF and errors
+		for total < skip && !eof {
+			n, err := s.r.Read(buf[total:])
+			if err != nil {
+				if err != io.EOF {
+					log.Println("Error reading stream:",
+						err)
+				}
+				eof = true
 			}
-			break
+			total += n
 		}
-		total += n
 
-		// wait for enough data for parsing CLC message
-		if clc != nil && total >= skip {
+		// parse and print current CLC message
+		if clc != nil {
+			// print header
+			printCLC(s, clc)
+
+			// parse and print message
 			switch clc.typ {
 			case clcProposal:
 				proposal := parseCLCProposal(clc,
 					buf[skip-int(clc.length):])
 				fmt.Println("   ", proposal)
+
 			case clcAccept:
 				accept := parseCLCAcceptConfirm(clc,
 					buf[skip-int(clc.length):])
 				fmt.Println("   ", accept)
+
 			case clcConfirm:
 				confirm := parseCLCAcceptConfirm(clc,
 					buf[skip-int(clc.length):])
 				fmt.Println("   ", confirm)
-				// handshake finished
-				break
+
 			case clcDecline:
 				decline := parseCLCDecline(clc,
 					buf[skip-clcDeclineLen:])
 				fmt.Println("   ", decline)
-				// handshake finished
-				break
 			}
-		}
 
-		// wait for enough data for parsing next CLC header
-		if total-skip < clcHeaderLen {
+			// wait for next handshake message
+			clc = nil
+			skip += clcHeaderLen
 			continue
+
 		}
 
-		// parse current CLC header
-		clc = parseCLCHeader(buf[skip:])
+		// if there is not enough data left in buffer, we are done
+		if total < skip {
+			break
+		}
+
+		// parse header of current CLC message
+		clc = parseCLCHeader(buf[skip-clcHeaderLen:])
 		if clc == nil {
 			break
 		}
 
-		// print current header
-		printCLC(s, clc)
-
-		// skip to next header if handshake still active
-		skip += int(clc.length)
+		// skip to end of current message to be able to parse it
+		skip += int(clc.length) - clcHeaderLen
 	}
+
+	// discard everything
 	tcpreader.DiscardBytesToEOF(&s.r)
 }
 
