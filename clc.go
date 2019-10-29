@@ -35,6 +35,9 @@ var (
 const (
 	// general
 	smcSystemIDLen = 8
+	smcTypeR       = 0 /* SMC-R only */
+	smcTypeD       = 1 /* SMC-D only */
+	smcTypeB       = 3 /* SMC-R and SMC-D */
 
 	// header/message lengths
 	clcHeaderLen  = 8
@@ -99,6 +102,76 @@ func (p *clcProposalMsg) String() string {
 	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID, p.ibMAC,
 		p.ipAreaOffset, p.smcdGID, p.prefix, p.prefixLen,
 		p.ipv6PrefixesCnt)
+}
+
+// CLC SMC-R Accept/Confirm Message
+type clcSMCRAcceptConfirmMsg struct {
+	senderPeerID   [smcSystemIDLen]byte /* unique system id */
+	ibGID          [16]byte             /* gid of ib_device port */
+	ibMAC          [6]byte              /* mac of ib_device port */
+	qpn            [3]byte              /* QP number */
+	rmbRkey        uint32               /* RMB rkey */
+	rmbeIdx        uint8                /* Index of RMBE in RMB */
+	rmbeAlertToken uint32               /* unique connection id */
+	rmbeSize       uint8                // 4 bits /* buf size (compressed) */
+	qpMtu          uint8                // 4 bits /* QP mtu */
+	reserved       uint8
+	rmbDmaAddr     uint64 /* RMB virtual address */
+	reserved2      uint8
+	psn            [3]byte /* packet sequence number */
+	trailer        [4]byte /* eye catcher "SMCR" EBCDIC */
+}
+
+// convert CLC SMC-R Accept/Confirm to string
+func (ac *clcSMCRAcceptConfirmMsg) String() string {
+	acFmt := "Sender Peer ID: %v, ib GID: %v, ib MAC: %v, " +
+		"qpn: %v, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d," +
+		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %v, " +
+		"trailer: %v"
+
+	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC, ac.qpn,
+		ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken, ac.rmbeSize,
+		ac.qpMtu, ac.rmbDmaAddr, ac.psn, ac.trailer)
+}
+
+// CLC SMC-D Accept/Confirm Message
+type clcSMCDAcceptConfirmMsg struct {
+	smcdGID     uint64 /* Sender GID */
+	smcdToken   uint64 /* DMB token */
+	dmbeIdx     uint8  /* DMBE index */
+	dmbeSize    uint8  // 4 bits /* buf size (compressed) */
+	reserved3   uint8  // 4 bits
+	reserved4   uint16
+	linkid      uint32 /* Link identifier */
+	reserved5   [12]byte
+	smcdTrailer [4]byte
+}
+
+// convert CLC SMC-D Accept/Confirm to string
+func (ac *clcSMCDAcceptConfirmMsg) String() string {
+	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
+		"DMBE Size %d, Link ID: %d, trailer: %v"
+
+	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
+		ac.dmbeSize, ac.linkid, ac.smcdTrailer)
+}
+
+// CLC Accept/Confirm Message
+type clcAcceptConfirmMsg struct {
+	hdr  *clcHeader
+	smcr *clcSMCRAcceptConfirmMsg
+	smcd *clcSMCDAcceptConfirmMsg
+}
+
+// convert CLC Accept/Confirm to string
+func (ac *clcAcceptConfirmMsg) String() string {
+	if ac.smcr != nil {
+		return ac.smcr.String()
+	}
+	if ac.smcd != nil {
+		return ac.smcd.String()
+	}
+	return "Unknown"
 }
 
 // CLC Decline Message
@@ -263,6 +336,86 @@ func parseCLCProposal(hdr *clcHeader, buf []byte) *clcProposalMsg {
 	return &proposal
 }
 
+// parse SMC-R Accept/Confirm Message
+func parseSMCRAcceptConfirm(
+	hdr *clcHeader, buf []byte) *clcSMCRAcceptConfirmMsg {
+	ac := clcSMCRAcceptConfirmMsg{}
+
+	// parse message content
+	buf = buf[clcHeaderLen:]
+	copy(ac.senderPeerID[:], buf[:smcSystemIDLen])
+	buf = buf[smcSystemIDLen:]
+	copy(ac.ibGID[:], buf[:16])
+	buf = buf[16:]
+	copy(ac.ibMAC[:], buf[:6])
+	buf = buf[6:]
+	copy(ac.qpn[:], buf[:3])
+	buf = buf[3:]
+	ac.rmbRkey = binary.BigEndian.Uint32(buf[:4])
+	buf = buf[4:]
+	ac.rmbeIdx = uint8(buf[0])
+	buf = buf[1:]
+	ac.rmbeAlertToken = binary.BigEndian.Uint32(buf[:4])
+	buf = buf[4:]
+	ac.rmbeSize = uint8(buf[0])
+	buf = buf[1:]
+	ac.qpMtu = uint8(buf[0])
+	buf = buf[1:]
+	ac.reserved = uint8(buf[0])
+	buf = buf[1:]
+	ac.rmbDmaAddr = binary.BigEndian.Uint64(buf[:8])
+	buf = buf[8:]
+	ac.reserved2 = uint8(buf[0])
+	buf = buf[1:]
+	copy(ac.psn[:], buf[:3])
+	buf = buf[3:]
+	copy(ac.trailer[:], buf[:4])
+
+	return &ac
+}
+
+// parse SMC-D Accept/Confirm Message
+func parseSMCDAcceptConfirm(
+	hdr *clcHeader, buf []byte) *clcSMCDAcceptConfirmMsg {
+	ac := clcSMCDAcceptConfirmMsg{}
+
+	// parse message content
+	buf = buf[clcHeaderLen:]
+	ac.smcdGID = binary.BigEndian.Uint64(buf[:8])
+	buf = buf[8:]
+	ac.smcdToken = binary.BigEndian.Uint64(buf[:8])
+	buf = buf[8:]
+	ac.dmbeIdx = uint8(buf[0])
+	buf = buf[1:]
+	ac.dmbeSize = (uint8(buf[0]) & 0b11110000) >> 4
+	ac.reserved3 = (uint8(buf[0]) & 0b00001111)
+	buf = buf[1:]
+	ac.reserved4 = binary.BigEndian.Uint16(buf[:2])
+	buf = buf[2:]
+	ac.linkid = binary.BigEndian.Uint32(buf[:4])
+	buf = buf[4:]
+	copy(ac.reserved5[:], buf[:12])
+	buf = buf[12:]
+	copy(ac.smcdTrailer[:], buf[:4])
+
+	return &ac
+}
+
+// parse Accept/Confirm Message
+func parseCLCAcceptConfirm(hdr *clcHeader, buf []byte) *clcAcceptConfirmMsg {
+	ac := clcAcceptConfirmMsg{}
+	ac.hdr = hdr
+
+	if hdr.path == smcTypeR {
+		ac.smcr = parseSMCRAcceptConfirm(hdr, buf)
+	}
+	if hdr.path == smcTypeD {
+		ac.smcd = parseSMCDAcceptConfirm(hdr, buf)
+	}
+
+	return &ac
+}
+
 // parse CLC Decline in buffer
 func parseCLCDecline(hdr *clcHeader, buf []byte) *clcDeclineMsg {
 	decline := clcDeclineMsg{}
@@ -361,7 +514,14 @@ func (s *smcStream) run() {
 				proposal := parseCLCProposal(clc,
 					buf[skip-int(clc.length):])
 				fmt.Println("   ", proposal)
+			case clcAccept:
+				accept := parseCLCAcceptConfirm(clc,
+					buf[skip-int(clc.length):])
+				fmt.Println("   ", accept)
 			case clcConfirm:
+				confirm := parseCLCAcceptConfirm(clc,
+					buf[skip-int(clc.length):])
+				fmt.Println("   ", confirm)
 				// handshake finished
 				break
 			case clcDecline:
