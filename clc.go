@@ -71,6 +71,36 @@ const (
 	clcDeclineErrRegRMB  = 0x09990003 /* reg rmb failed */
 )
 
+// CLC Proposal Message
+type clcProposalMsg struct {
+	hdr          *clcHeader
+	senderPeerID [smcSystemIDLen]byte /* unique system id */
+	ibGID        [16]byte             /* gid of ib_device port */
+	ibMAC        [6]byte              /* mac of ib_device port */
+	ipAreaOffset uint16               /* offset to IP address info area */
+
+	// Optional SMC-D info
+	smcdGID uint64 /* ISM GID of requestor */
+	res     [32]byte
+
+	// IP/prefix info
+	prefix          uint32 /* subnet mask (rather prefix) */
+	prefixLen       uint8  /* number of significant bits in mask */
+	reserved        [2]byte
+	ipv6PrefixesCnt uint8 /* number of IPv6 prefixes in prefix array */
+}
+
+// convert CLC Proposal to string
+func (p *clcProposalMsg) String() string {
+	proposalFmt := "Sender Peer ID: %v, ib GID: %v, ib MAC: %v " +
+		"ip area offset: %d, SMC-D GID: %d, " +
+		"prefix: %d, prefix len: %d, ipv6 prefix count: %d"
+
+	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID, p.ibMAC,
+		p.ipAreaOffset, p.smcdGID, p.prefix, p.prefixLen,
+		p.ipv6PrefixesCnt)
+}
+
 // CLC Decline Message
 type clcDeclineMsg struct {
 	hdr           *clcHeader
@@ -197,6 +227,42 @@ func hasEyecatcher(buf []byte) bool {
 	return false
 }
 
+// parse CLC Proposal in buffer
+func parseCLCProposal(hdr *clcHeader, buf []byte) *clcProposalMsg {
+	proposal := clcProposalMsg{}
+	proposal.hdr = hdr
+
+	// parse message content
+	buf = buf[clcHeaderLen:]
+	copy(proposal.senderPeerID[:], buf[:smcSystemIDLen])
+	buf = buf[smcSystemIDLen:]
+	copy(proposal.ibGID[:], buf[:16])
+	buf = buf[16:]
+	copy(proposal.ibMAC[:], buf[:6])
+	buf = buf[6:]
+	proposal.ipAreaOffset = binary.BigEndian.Uint16(buf[:2])
+	buf = buf[2:]
+	if proposal.ipAreaOffset == 40 {
+		// Optional SMC-D info
+		proposal.smcdGID = binary.BigEndian.Uint64(buf[:8])
+		buf = buf[8:]
+		copy(proposal.res[:], buf[:32])
+		buf = buf[32:]
+	} else {
+		buf = buf[proposal.ipAreaOffset:]
+	}
+	// IP/prefix info
+	proposal.prefix = binary.BigEndian.Uint32(buf[:4])
+	buf = buf[4:]
+	proposal.prefixLen = uint8(buf[0])
+	buf = buf[1:]
+	copy(proposal.reserved[:], buf[0:2])
+	buf = buf[2:]
+	proposal.ipv6PrefixesCnt = uint8(buf[0])
+
+	return &proposal
+}
+
 // parse CLC Decline in buffer
 func parseCLCDecline(hdr *clcHeader, buf []byte) *clcDeclineMsg {
 	decline := clcDeclineMsg{}
@@ -291,6 +357,10 @@ func (s *smcStream) run() {
 		// wait for enough data for parsing CLC message
 		if clc != nil && total >= skip {
 			switch clc.typ {
+			case clcProposal:
+				proposal := parseCLCProposal(clc,
+					buf[skip-int(clc.length):])
+				fmt.Println("   ", proposal)
 			case clcConfirm:
 				// handshake finished
 				break
