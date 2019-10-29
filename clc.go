@@ -87,10 +87,10 @@ func (p peerID) String() string {
 // CLC Proposal Message
 type clcProposalMsg struct {
 	hdr          *clcHeader
-	senderPeerID peerID   /* unique system id */
-	ibGID        [16]byte /* gid of ib_device port */
-	ibMAC        [6]byte  /* mac of ib_device port */
-	ipAreaOffset uint16   /* offset to IP address info area */
+	senderPeerID peerID           /* unique system id */
+	ibGID        [16]byte         /* gid of ib_device port */
+	ibMAC        net.HardwareAddr /* mac of ib_device port */
+	ipAreaOffset uint16           /* offset to IP address info area */
 
 	// Optional SMC-D info
 	smcdGID uint64 /* ISM GID of requestor */
@@ -105,7 +105,7 @@ type clcProposalMsg struct {
 
 // convert CLC Proposal to string
 func (p *clcProposalMsg) String() string {
-	proposalFmt := "Sender Peer ID: %s, ib GID: %v, ib MAC: %v " +
+	proposalFmt := "Sender Peer ID: %s, ib GID: %v, ib MAC: %s " +
 		"ip area offset: %d, SMC-D GID: %d, " +
 		"prefix: %d, prefix len: %d, ipv6 prefix count: %d"
 
@@ -116,15 +116,15 @@ func (p *clcProposalMsg) String() string {
 
 // CLC SMC-R Accept/Confirm Message
 type clcSMCRAcceptConfirmMsg struct {
-	senderPeerID   peerID   /* unique system id */
-	ibGID          [16]byte /* gid of ib_device port */
-	ibMAC          [6]byte  /* mac of ib_device port */
-	qpn            [3]byte  /* QP number */
-	rmbRkey        uint32   /* RMB rkey */
-	rmbeIdx        uint8    /* Index of RMBE in RMB */
-	rmbeAlertToken uint32   /* unique connection id */
-	rmbeSize       uint8    // 4 bits /* buf size (compressed) */
-	qpMtu          uint8    // 4 bits /* QP mtu */
+	senderPeerID   peerID           /* unique system id */
+	ibGID          [16]byte         /* gid of ib_device port */
+	ibMAC          net.HardwareAddr /* mac of ib_device port */
+	qpn            [3]byte          /* QP number */
+	rmbRkey        uint32           /* RMB rkey */
+	rmbeIdx        uint8            /* Index of RMBE in RMB */
+	rmbeAlertToken uint32           /* unique connection id */
+	rmbeSize       uint8            // 4 bits /* buf size (compressed) */
+	qpMtu          uint8            // 4 bits /* QP mtu */
 	reserved       uint8
 	rmbDmaAddr     uint64 /* RMB virtual address */
 	reserved2      uint8
@@ -134,7 +134,7 @@ type clcSMCRAcceptConfirmMsg struct {
 
 // convert CLC SMC-R Accept/Confirm to string
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
-	acFmt := "Sender Peer ID: %s, ib GID: %v, ib MAC: %v, " +
+	acFmt := "Sender Peer ID: %s, ib GID: %v, ib MAC: %s, " +
 		"qpn: %v, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d," +
 		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %v, " +
 		"trailer: %v"
@@ -321,6 +321,7 @@ func parseCLCProposal(hdr *clcHeader, buf []byte) *clcProposalMsg {
 	buf = buf[peerIDLen:]
 	copy(proposal.ibGID[:], buf[:16])
 	buf = buf[16:]
+	proposal.ibMAC = make(net.HardwareAddr, 6)
 	copy(proposal.ibMAC[:], buf[:6])
 	buf = buf[6:]
 	proposal.ipAreaOffset = binary.BigEndian.Uint16(buf[:2])
@@ -357,6 +358,7 @@ func parseSMCRAcceptConfirm(
 	buf = buf[peerIDLen:]
 	copy(ac.ibGID[:], buf[:16])
 	buf = buf[16:]
+	ac.ibMAC = make(net.HardwareAddr, 6)
 	copy(ac.ibMAC[:], buf[:6])
 	buf = buf[6:]
 	copy(ac.qpn[:], buf[:3])
