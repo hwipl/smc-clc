@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -34,10 +35,10 @@ var (
 
 const (
 	// general
-	smcSystemIDLen = 8
-	smcTypeR       = 0 /* SMC-R only */
-	smcTypeD       = 1 /* SMC-D only */
-	smcTypeB       = 3 /* SMC-R and SMC-D */
+	peerIDLen = 8
+	smcTypeR  = 0 /* SMC-R only */
+	smcTypeD  = 1 /* SMC-D only */
+	smcTypeB  = 3 /* SMC-R and SMC-D */
 
 	// header/message lengths
 	clcHeaderLen  = 8
@@ -74,13 +75,22 @@ const (
 	clcDeclineErrRegRMB  = 0x09990003 /* reg rmb failed */
 )
 
+// SMC peer ID
+type peerID [peerIDLen]byte
+
+func (p peerID) String() string {
+	instance := binary.BigEndian.Uint16(p[:2])
+	roceMAC := net.HardwareAddr(p[2:8])
+	return fmt.Sprintf("%d@%s", instance, roceMAC)
+}
+
 // CLC Proposal Message
 type clcProposalMsg struct {
 	hdr          *clcHeader
-	senderPeerID [smcSystemIDLen]byte /* unique system id */
-	ibGID        [16]byte             /* gid of ib_device port */
-	ibMAC        [6]byte              /* mac of ib_device port */
-	ipAreaOffset uint16               /* offset to IP address info area */
+	senderPeerID peerID   /* unique system id */
+	ibGID        [16]byte /* gid of ib_device port */
+	ibMAC        [6]byte  /* mac of ib_device port */
+	ipAreaOffset uint16   /* offset to IP address info area */
 
 	// Optional SMC-D info
 	smcdGID uint64 /* ISM GID of requestor */
@@ -95,7 +105,7 @@ type clcProposalMsg struct {
 
 // convert CLC Proposal to string
 func (p *clcProposalMsg) String() string {
-	proposalFmt := "Sender Peer ID: %v, ib GID: %v, ib MAC: %v " +
+	proposalFmt := "Sender Peer ID: %s, ib GID: %v, ib MAC: %v " +
 		"ip area offset: %d, SMC-D GID: %d, " +
 		"prefix: %d, prefix len: %d, ipv6 prefix count: %d"
 
@@ -106,15 +116,15 @@ func (p *clcProposalMsg) String() string {
 
 // CLC SMC-R Accept/Confirm Message
 type clcSMCRAcceptConfirmMsg struct {
-	senderPeerID   [smcSystemIDLen]byte /* unique system id */
-	ibGID          [16]byte             /* gid of ib_device port */
-	ibMAC          [6]byte              /* mac of ib_device port */
-	qpn            [3]byte              /* QP number */
-	rmbRkey        uint32               /* RMB rkey */
-	rmbeIdx        uint8                /* Index of RMBE in RMB */
-	rmbeAlertToken uint32               /* unique connection id */
-	rmbeSize       uint8                // 4 bits /* buf size (compressed) */
-	qpMtu          uint8                // 4 bits /* QP mtu */
+	senderPeerID   peerID   /* unique system id */
+	ibGID          [16]byte /* gid of ib_device port */
+	ibMAC          [6]byte  /* mac of ib_device port */
+	qpn            [3]byte  /* QP number */
+	rmbRkey        uint32   /* RMB rkey */
+	rmbeIdx        uint8    /* Index of RMBE in RMB */
+	rmbeAlertToken uint32   /* unique connection id */
+	rmbeSize       uint8    // 4 bits /* buf size (compressed) */
+	qpMtu          uint8    // 4 bits /* QP mtu */
 	reserved       uint8
 	rmbDmaAddr     uint64 /* RMB virtual address */
 	reserved2      uint8
@@ -124,7 +134,7 @@ type clcSMCRAcceptConfirmMsg struct {
 
 // convert CLC SMC-R Accept/Confirm to string
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
-	acFmt := "Sender Peer ID: %v, ib GID: %v, ib MAC: %v, " +
+	acFmt := "Sender Peer ID: %s, ib GID: %v, ib MAC: %v, " +
 		"qpn: %v, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d," +
 		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %v, " +
 		"trailer: %v"
@@ -177,8 +187,8 @@ func (ac *clcAcceptConfirmMsg) String() string {
 // CLC Decline Message
 type clcDeclineMsg struct {
 	hdr           *clcHeader
-	senderPeerID  [smcSystemIDLen]byte /* sender peer_id */
-	peerDiagnosis uint32               /* diagnosis information */
+	senderPeerID  peerID /* sender peer_id */
+	peerDiagnosis uint32 /* diagnosis information */
 	reserved      [4]byte
 	trailer       [4]byte /* eye catcher "SMCR" EBCDIC */
 }
@@ -307,8 +317,8 @@ func parseCLCProposal(hdr *clcHeader, buf []byte) *clcProposalMsg {
 
 	// parse message content
 	buf = buf[clcHeaderLen:]
-	copy(proposal.senderPeerID[:], buf[:smcSystemIDLen])
-	buf = buf[smcSystemIDLen:]
+	copy(proposal.senderPeerID[:], buf[:peerIDLen])
+	buf = buf[peerIDLen:]
 	copy(proposal.ibGID[:], buf[:16])
 	buf = buf[16:]
 	copy(proposal.ibMAC[:], buf[:6])
@@ -343,8 +353,8 @@ func parseSMCRAcceptConfirm(
 
 	// parse message content
 	buf = buf[clcHeaderLen:]
-	copy(ac.senderPeerID[:], buf[:smcSystemIDLen])
-	buf = buf[smcSystemIDLen:]
+	copy(ac.senderPeerID[:], buf[:peerIDLen])
+	buf = buf[peerIDLen:]
 	copy(ac.ibGID[:], buf[:16])
 	buf = buf[16:]
 	copy(ac.ibMAC[:], buf[:6])
@@ -423,8 +433,8 @@ func parseCLCDecline(hdr *clcHeader, buf []byte) *clcDeclineMsg {
 
 	// parse message content
 	buf = buf[clcHeaderLen:]
-	copy(decline.senderPeerID[:], buf[:smcSystemIDLen])
-	buf = buf[smcSystemIDLen:]
+	copy(decline.senderPeerID[:], buf[:peerIDLen])
+	buf = buf[peerIDLen:]
 	decline.peerDiagnosis = binary.BigEndian.Uint32(buf[:4])
 	buf = buf[4:]
 	copy(decline.reserved[:], buf[:4])
