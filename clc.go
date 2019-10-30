@@ -97,7 +97,7 @@ type clcProposalMsg struct {
 	res     [32]byte
 
 	// IP/prefix info
-	prefix          uint32 /* subnet mask (rather prefix) */
+	prefix          net.IP /* subnet mask (rather prefix) */
 	prefixLen       uint8  /* number of significant bits in mask */
 	reserved        [2]byte
 	ipv6PrefixesCnt uint8 /* number of IPv6 prefixes in prefix array */
@@ -107,7 +107,7 @@ type clcProposalMsg struct {
 func (p *clcProposalMsg) String() string {
 	proposalFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s " +
 		"ip area offset: %d, SMC-D GID: %d, " +
-		"prefix: %d, prefix len: %d, ipv6 prefix count: %d"
+		"prefix: %s/%d, ipv6 prefix count: %d"
 
 	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID, p.ibMAC,
 		p.ipAreaOffset, p.smcdGID, p.prefix, p.prefixLen,
@@ -337,7 +337,8 @@ func parseCLCProposal(hdr *clcHeader, buf []byte) *clcProposalMsg {
 		buf = buf[proposal.ipAreaOffset:]
 	}
 	// IP/prefix info
-	proposal.prefix = binary.BigEndian.Uint32(buf[:4])
+	proposal.prefix = make(net.IP, 4)
+	copy(proposal.prefix[:], buf[:4])
 	buf = buf[4:]
 	proposal.prefixLen = uint8(buf[0])
 	buf = buf[1:]
