@@ -179,16 +179,17 @@ func (p *clcProposalMsg) String() string {
 	}
 
 	if *showReserved {
-		proposalFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s " +
-			"ip area offset: %d, SMC-D GID: %d, reserved: %#x " +
-			"prefix: %s/%d, reserved: %#x, ipv6 prefix count: %d"
+		proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s " +
+			"IP Area Offset: %d, SMC-D GID: %d, Reserved: %#x " +
+			"IPv4 Prefix: %s/%d, Reserved: %#x, " +
+			"IPv6 Prefix Count: %d"
 		return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID,
 			p.ibMAC, p.ipAreaOffset, p.smcdGID, p.reserved,
 			p.prefix, p.prefixLen, p.reserved2, p.ipv6PrefixesCnt)
 	}
-	proposalFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s " +
-		"ip area offset: %d, SMC-D GID: %d, " +
-		"prefix: %s/%d, ipv6 prefix count: %d"
+	proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s " +
+		"IP Area Offset: %d, SMC-D GID: %d, " +
+		"IPv4 Prefix: %s/%d, IPv6 Prefix Count: %d"
 	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID, p.ibMAC,
 		p.ipAreaOffset, p.smcdGID, p.prefix, p.prefixLen,
 		p.ipv6PrefixesCnt)
@@ -218,19 +219,20 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	}
 
 	if *showReserved {
-		acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
-			"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, " +
-			"rmbe Alert Token: %d, rmbe Size: %s, qp MTU: %s, " +
-			"reserved: %#x, rmb DMA address: %#x, " +
-			"reserved: %#x, psn: %d"
+		acFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
+			"QP Number: %d, RMB RKey: %d, RMBE Index: %d, " +
+			"RMBE Alert Token: %d, RMBE Size: %s, QP MTU: %s, " +
+			"Reserved: %#x, RMB Virtual Address: %#x, " +
+			"Reserved: %#x, Packet Sequence Number: %d"
 		return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC,
 			ac.qpn, ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken,
 			ac.rmbeSize, ac.qpMtu, ac.reserved, ac.rmbDmaAddr,
 			ac.reserved2, ac.psn)
 	}
-	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
-		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d, " +
-		"rmbe Size: %s, qp MTU: %s, rmb DMA address: %#x, psn: %d"
+	acFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
+		"QP Number: %d, RMB RKey: %d, RMBE Index: %d, " +
+		"RMBE Alert Token: %d, RMBE Size: %s, QP MTU: %s, " +
+		"RMB Virtual Address: %#x, Packet Sequence Number: %d"
 	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC, ac.qpn,
 		ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken, ac.rmbeSize,
 		ac.qpMtu, ac.rmbDmaAddr, ac.psn)
@@ -256,8 +258,8 @@ func (ac *clcSMCDAcceptConfirmMsg) String() string {
 
 	if *showReserved {
 		acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
-			"DMBE Size %s, reserved: %#x, reserved: %#x, " +
-			"Link ID: %d, reserved: %#x"
+			"DMBE Size %s, Reserved: %#x, Reserved: %#x, " +
+			"Link ID: %d, Reserved: %#x"
 		return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
 			ac.dmbeSize, ac.reserved, ac.reserved2, ac.linkid,
 			ac.reserved3)
@@ -355,12 +357,12 @@ func (d *clcDeclineMsg) String() string {
 	}
 
 	if *showReserved {
-		declineFmt := "Sender Peer ID: %s, Peer Diagnosis: %s, " +
-			"reserved: %#x"
+		declineFmt := "Peer ID: %s, Peer Diagnosis: %s, " +
+			"Reserved: %#x"
 		return fmt.Sprintf(declineFmt, d.senderPeerID, diag,
 			d.reserved)
 	}
-	declineFmt := "Sender Peer ID: %s, Peer Diagnosis: %s"
+	declineFmt := "Peer ID: %s, Peer Diagnosis: %s"
 	return fmt.Sprintf(declineFmt, d.senderPeerID, diag)
 }
 
@@ -377,7 +379,7 @@ type clcMessage struct {
 
 	// 1 byte bitfield containing version, flag, reserved, path:
 	version  uint8 // (4 bits)
-	flag     uint8 // (1 bit)
+	first    uint8 // (1 bit)
 	reserved byte  // (1 bit)
 	path     path  // (2 bits)
 
@@ -443,15 +445,16 @@ func (c *clcMessage) String() string {
 
 	// construct string
 	if *showReserved {
-		headerFmt := "%s: eyecatcher: %s, length: %d, version: %d, " +
-			"flag: %d, reserved: %#x, path: %s, %s, trailer: %s"
+		headerFmt := "%s: Eyecatcher: %s, Length: %d, Version: %d, " +
+			"First Contact: %d, Reserved: %#x, Path: %s, %s, " +
+			"Trailer: %s"
 		return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length,
-			c.version, c.flag, c.reserved, c.path, msg, c.trailer)
+			c.version, c.first, c.reserved, c.path, msg, c.trailer)
 	}
-	headerFmt := "%s: eyecatcher: %s, length: %d, version: %d, " +
-		"flag: %d, path: %s, %s, trailer: %s"
+	headerFmt := "%s: Eyecatcher: %s, Length: %d, Version: %d, " +
+		"First Contact: %d, Path: %s, %s, Trailer: %s"
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length, c.version,
-		c.flag, c.path, msg, c.trailer)
+		c.first, c.path, msg, c.trailer)
 }
 
 // check if there is a SMC-R or SMC-D eyecatcher in the buffer
@@ -688,7 +691,7 @@ func parseCLCHeader(buf []byte) *clcMessage {
 	// 1 byte bitfield: version, flag, reserved, path
 	bitfield := buf[7]
 	header.version = (bitfield & 0b11110000) >> 4
-	header.flag = (bitfield & 0b00001000) >> 3
+	header.first = (bitfield & 0b00001000) >> 3
 	header.reserved = (bitfield & 0b00000100) >> 2
 	header.path = path(bitfield & 0b00000011)
 
