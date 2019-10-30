@@ -88,7 +88,7 @@ func (p peerID) String() string {
 type clcProposalMsg struct {
 	hdr          *clcHeader
 	senderPeerID peerID           /* unique system id */
-	ibGID        [16]byte         /* gid of ib_device port */
+	ibGID        net.IP           /* gid of ib_device port */
 	ibMAC        net.HardwareAddr /* mac of ib_device port */
 	ipAreaOffset uint16           /* offset to IP address info area */
 
@@ -105,7 +105,7 @@ type clcProposalMsg struct {
 
 // convert CLC Proposal to string
 func (p *clcProposalMsg) String() string {
-	proposalFmt := "Sender Peer ID: %s, ib GID: %v, ib MAC: %s " +
+	proposalFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s " +
 		"ip area offset: %d, SMC-D GID: %d, " +
 		"prefix: %d, prefix len: %d, ipv6 prefix count: %d"
 
@@ -117,7 +117,7 @@ func (p *clcProposalMsg) String() string {
 // CLC SMC-R Accept/Confirm Message
 type clcSMCRAcceptConfirmMsg struct {
 	senderPeerID   peerID           /* unique system id */
-	ibGID          [16]byte         /* gid of ib_device port */
+	ibGID          net.IP           /* gid of ib_device port */
 	ibMAC          net.HardwareAddr /* mac of ib_device port */
 	qpn            [3]byte          /* QP number */
 	rmbRkey        uint32           /* RMB rkey */
@@ -134,7 +134,7 @@ type clcSMCRAcceptConfirmMsg struct {
 
 // convert CLC SMC-R Accept/Confirm to string
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
-	acFmt := "Sender Peer ID: %s, ib GID: %v, ib MAC: %s, " +
+	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
 		"qpn: %v, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d," +
 		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %v, " +
 		"trailer: %v"
@@ -319,6 +319,7 @@ func parseCLCProposal(hdr *clcHeader, buf []byte) *clcProposalMsg {
 	buf = buf[clcHeaderLen:]
 	copy(proposal.senderPeerID[:], buf[:peerIDLen])
 	buf = buf[peerIDLen:]
+	proposal.ibGID = make(net.IP, 16)
 	copy(proposal.ibGID[:], buf[:16])
 	buf = buf[16:]
 	proposal.ibMAC = make(net.HardwareAddr, 6)
@@ -356,6 +357,7 @@ func parseSMCRAcceptConfirm(
 	buf = buf[clcHeaderLen:]
 	copy(ac.senderPeerID[:], buf[:peerIDLen])
 	buf = buf[peerIDLen:]
+	ac.ibGID = make(net.IP, 16)
 	copy(ac.ibGID[:], buf[:16])
 	buf = buf[16:]
 	ac.ibMAC = make(net.HardwareAddr, 6)
