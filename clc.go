@@ -132,7 +132,7 @@ type clcSMCRAcceptConfirmMsg struct {
 	senderPeerID   peerID           /* unique system id */
 	ibGID          net.IP           /* gid of ib_device port */
 	ibMAC          net.HardwareAddr /* mac of ib_device port */
-	qpn            [3]byte          /* QP number */
+	qpn            int              /* QP number */
 	rmbRkey        uint32           /* RMB rkey */
 	rmbeIdx        uint8            /* Index of RMBE in RMB */
 	rmbeAlertToken uint32           /* unique connection id */
@@ -148,7 +148,7 @@ type clcSMCRAcceptConfirmMsg struct {
 // convert CLC SMC-R Accept/Confirm to string
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
-		"qpn: %v, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d," +
+		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d," +
 		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %v, " +
 		"trailer: %v"
 
@@ -367,7 +367,9 @@ func parseSMCRAcceptConfirm(
 	ac.ibMAC = make(net.HardwareAddr, 6)
 	copy(ac.ibMAC[:], buf[:6])
 	buf = buf[6:]
-	copy(ac.qpn[:], buf[:3])
+	ac.qpn = int(buf[0]) << 16
+	ac.qpn |= int(buf[1]) << 8
+	ac.qpn |= int(buf[2])
 	buf = buf[3:]
 	ac.rmbRkey = binary.BigEndian.Uint32(buf[:4])
 	buf = buf[4:]
