@@ -88,6 +88,22 @@ func (e eyecatcher) String() string {
 	return "Unknown"
 }
 
+// SMC path
+type path uint8
+
+func (p path) String() string {
+	switch p {
+	case smcTypeR:
+		return "SMC-R"
+	case smcTypeD:
+		return "SMC-D"
+	case smcTypeB:
+		return "SMC-R + SMC-D"
+	default:
+		return "unknown"
+	}
+}
+
 // SMC peer ID
 type peerID [peerIDLen]byte
 
@@ -291,7 +307,7 @@ type clcMessage struct {
 	version uint8 // (4 bits)
 	flag    uint8 // (1 bit)
 	rsvd    uint8 // (1 bit)
-	path    uint8 // (2 bits)
+	path    path  // (2 bits)
 
 	// type depenent message content
 	proposal *clcProposalMsg
@@ -328,7 +344,7 @@ func (c *clcMessage) parse(buf []byte) {
 // convert header fields to a string
 func (c *clcMessage) String() string {
 	headerFmt := "%s: eyecatcher: %s, length: %d, version: %d, " +
-		"flag: %d, rsvd: %d, path: %d, %s, trailer: %s"
+		"flag: %d, rsvd: %d, path: %s, %s, trailer: %s"
 	var typ string
 	var msg string
 
@@ -596,7 +612,7 @@ func parseCLCHeader(buf []byte) *clcMessage {
 	header.version = (bitfield & 0b11110000) >> 4
 	header.flag = (bitfield & 0b00001000) >> 3
 	header.rsvd = (bitfield & 0b00000100) >> 2
-	header.path = (bitfield & 0b00000011)
+	header.path = path(bitfield & 0b00000011)
 
 	return &header
 }
