@@ -372,9 +372,8 @@ func parseSMCRAcceptConfirm(
 	buf = buf[1:]
 	ac.rmbeAlertToken = binary.BigEndian.Uint32(buf[:4])
 	buf = buf[4:]
-	ac.rmbeSize = uint8(buf[0])
-	buf = buf[1:]
-	ac.qpMtu = uint8(buf[0])
+	ac.rmbeSize = (uint8(buf[0]) & 0b11110000) >> 4
+	ac.qpMtu = (uint8(buf[0]) & 0b00001111)
 	buf = buf[1:]
 	ac.reserved = uint8(buf[0])
 	buf = buf[1:]
