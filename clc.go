@@ -151,7 +151,7 @@ type clcSMCRAcceptConfirmMsg struct {
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
 		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d, " +
-		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %d"
+		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %#x, psn: %d"
 
 	if ac == nil {
 		return "n/a"
