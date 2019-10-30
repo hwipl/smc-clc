@@ -117,6 +117,34 @@ func (p peerID) String() string {
 	return fmt.Sprintf("%d@%s", instance, roceMAC)
 }
 
+// SMC QP MTU
+type qpMTU uint8
+
+func (m qpMTU) String() string {
+	var mtu string
+
+	switch m {
+	case 1:
+		mtu = "256"
+
+	case 2:
+		mtu = "512"
+
+	case 3:
+		mtu = "1024"
+
+	case 4:
+		mtu = "2048"
+
+	case 5:
+		mtu = "4096"
+	default:
+		mtu = "reserved"
+	}
+
+	return fmt.Sprintf("%d (%s)", m, mtu)
+}
+
 // CLC Proposal Message
 type clcProposalMsg struct {
 	hdr          *clcMessage
@@ -168,7 +196,7 @@ type clcSMCRAcceptConfirmMsg struct {
 	rmbeIdx        uint8            /* Index of RMBE in RMB */
 	rmbeAlertToken uint32           /* unique connection id */
 	rmbeSize       uint8            /* 4 bits buf size (compressed) */
-	qpMtu          uint8            /* 4 bits QP mtu */
+	qpMtu          qpMTU            /* 4 bits QP mtu */
 	reserved       byte
 	rmbDmaAddr     uint64 /* RMB virtual address */
 	reserved2      byte
@@ -184,7 +212,7 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	if *showReserved {
 		acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
 			"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, " +
-			"rmbe Alert Token: %d, rmbe Size: %d, qp MTU: %d, " +
+			"rmbe Alert Token: %d, rmbe Size: %d, qp MTU: %s, " +
 			"reserved: %#x, rmb DMA address: %#x, " +
 			"reserved: %#x, psn: %d"
 		return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC,
@@ -194,7 +222,7 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	}
 	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
 		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d, " +
-		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %#x, psn: %d"
+		"rmbe Size: %d, qp MTU: %s, rmb DMA address: %#x, psn: %d"
 	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC, ac.qpn,
 		ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken, ac.rmbeSize,
 		ac.qpMtu, ac.rmbDmaAddr, ac.psn)
@@ -529,7 +557,7 @@ func parseSMCRAcceptConfirm(
 
 	// 1 byte bitfield: rmbe size (4 bits) and qp mtu (4 bits)
 	ac.rmbeSize = (uint8(buf[0]) & 0b11110000) >> 4
-	ac.qpMtu = (uint8(buf[0]) & 0b00001111)
+	ac.qpMtu = qpMTU(uint8(buf[0]) & 0b00001111)
 	buf = buf[1:]
 
 	// reserved
