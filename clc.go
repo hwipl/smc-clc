@@ -75,6 +75,19 @@ const (
 	clcDeclineErrRegRMB  = 0x09990003 /* reg rmb failed */
 )
 
+// SMC eyecatcher
+type eyecatcher [4]byte
+
+func (e eyecatcher) String() string {
+	if bytes.Compare(e[:], smcrEyecatcher) == 0 {
+		return "SMC-R"
+	}
+	if bytes.Compare(e[:], smcdEyecatcher) == 0 {
+		return "SMC-D"
+	}
+	return "Unknown"
+}
+
 // SMC peer ID
 type peerID [peerIDLen]byte
 
@@ -128,8 +141,8 @@ type clcSMCRAcceptConfirmMsg struct {
 	reserved       uint8
 	rmbDmaAddr     uint64 /* RMB virtual address */
 	reserved2      uint8
-	psn            [3]byte /* packet sequence number */
-	trailer        [4]byte /* eye catcher "SMCR" EBCDIC */
+	psn            [3]byte    /* packet sequence number */
+	trailer        eyecatcher /* eye catcher "SMCR" EBCDIC */
 }
 
 // convert CLC SMC-R Accept/Confirm to string
@@ -154,7 +167,7 @@ type clcSMCDAcceptConfirmMsg struct {
 	reserved4   uint16
 	linkid      uint32 /* Link identifier */
 	reserved5   [12]byte
-	smcdTrailer [4]byte
+	smcdTrailer eyecatcher
 }
 
 // convert CLC SMC-D Accept/Confirm to string
@@ -190,7 +203,7 @@ type clcDeclineMsg struct {
 	senderPeerID  peerID /* sender peer_id */
 	peerDiagnosis uint32 /* diagnosis information */
 	reserved      [4]byte
-	trailer       [4]byte /* eye catcher "SMCR" EBCDIC */
+	trailer       eyecatcher /* eye catcher "SMCR" EBCDIC */
 }
 
 // convert CLC Decline Message to string
@@ -253,7 +266,7 @@ func (d *clcDeclineMsg) String() string {
 
 // CLC header
 type clcHeader struct { /* header1 of clc messages */
-	eyecatcher [4]byte
+	eyecatcher eyecatcher
 	typ        uint8 /* proposal / accept / confirm / decline */
 	length     uint16
 
@@ -268,17 +281,7 @@ type clcHeader struct { /* header1 of clc messages */
 func (c *clcHeader) String() string {
 	headerFmt := "%s (eyecatcher: %s, length: %d, version: %d, " +
 		"flag %d, rsvd: %d, path %d)"
-	var eye string
 	var typ string
-
-	// type of eyecatcher
-	if bytes.Compare(c.eyecatcher[:], smcrEyecatcher) == 0 {
-		eye = "SMC-R"
-	} else if bytes.Compare(c.eyecatcher[:], smcdEyecatcher) == 0 {
-		eye = "SMC-R"
-	} else {
-		eye = "Unknown"
-	}
 
 	// message type
 	switch c.typ {
@@ -295,8 +298,8 @@ func (c *clcHeader) String() string {
 	}
 
 	// construct string
-	return fmt.Sprintf(headerFmt, typ, eye, c.length, c.version, c.flag,
-		c.rsvd, c.path)
+	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length, c.version,
+		c.flag, c.rsvd, c.path)
 }
 
 // check if there is a SMC-R or SMC-D eyecatcher in the buffer
