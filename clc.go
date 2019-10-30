@@ -21,6 +21,10 @@ var (
 	pcapDevice  = flag.String("i", "eth0", "the interface to listen on")
 	pcapPromisc = flag.Bool("promisc", true, "promiscuous mode")
 
+	// display variables
+	showReserved = flag.Bool("reserved", false,
+		"print reserved values in messages")
+
 	// flow table
 	flows = make(map[gopacket.Flow]map[gopacket.Flow]bool)
 )
@@ -122,25 +126,33 @@ type clcProposalMsg struct {
 	ipAreaOffset uint16           /* offset to IP address info area */
 
 	// Optional SMC-D info
-	smcdGID uint64 /* ISM GID of requestor */
-	res     [32]byte
+	smcdGID  uint64 /* ISM GID of requestor */
+	reserved [32]byte
 
 	// IP/prefix info
 	prefix          net.IP /* subnet mask (rather prefix) */
 	prefixLen       uint8  /* number of significant bits in mask */
-	reserved        [2]byte
+	reserved2       [2]byte
 	ipv6PrefixesCnt uint8 /* number of IPv6 prefixes in prefix array */
 }
 
 // convert CLC Proposal to string
 func (p *clcProposalMsg) String() string {
-	proposalFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s " +
-		"ip area offset: %d, SMC-D GID: %d, " +
-		"prefix: %s/%d, ipv6 prefix count: %d"
-
 	if p == nil {
 		return "n/a"
 	}
+
+	if *showReserved {
+		proposalFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s " +
+			"ip area offset: %d, SMC-D GID: %d, reserved: %#x " +
+			"prefix: %s/%d, reserved: %#x, ipv6 prefix count: %d"
+		return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID,
+			p.ibMAC, p.ipAreaOffset, p.smcdGID, p.reserved,
+			p.prefix, p.prefixLen, p.reserved2, p.ipv6PrefixesCnt)
+	}
+	proposalFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s " +
+		"ip area offset: %d, SMC-D GID: %d, " +
+		"prefix: %s/%d, ipv6 prefix count: %d"
 	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID, p.ibMAC,
 		p.ipAreaOffset, p.smcdGID, p.prefix, p.prefixLen,
 		p.ipv6PrefixesCnt)
@@ -157,21 +169,32 @@ type clcSMCRAcceptConfirmMsg struct {
 	rmbeAlertToken uint32           /* unique connection id */
 	rmbeSize       uint8            /* 4 bits buf size (compressed) */
 	qpMtu          uint8            /* 4 bits QP mtu */
-	reserved       uint8
+	reserved       byte
 	rmbDmaAddr     uint64 /* RMB virtual address */
-	reserved2      uint8
+	reserved2      byte
 	psn            int /* packet sequence number */
 }
 
 // convert CLC SMC-R Accept/Confirm to string
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
-	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
-		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d, " +
-		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %#x, psn: %d"
-
 	if ac == nil {
 		return "n/a"
 	}
+
+	if *showReserved {
+		acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
+			"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, " +
+			"rmbe Alert Token: %d, rmbe Size: %d, qp MTU: %d, " +
+			"reserved: %#x, rmb DMA address: %#x, " +
+			"reserved: %#x, psn: %d"
+		return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC,
+			ac.qpn, ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken,
+			ac.rmbeSize, ac.qpMtu, ac.reserved, ac.rmbDmaAddr,
+			ac.reserved2, ac.psn)
+	}
+	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
+		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d, " +
+		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %#x, psn: %d"
 	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC, ac.qpn,
 		ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken, ac.rmbeSize,
 		ac.qpMtu, ac.rmbDmaAddr, ac.psn)
@@ -183,20 +206,28 @@ type clcSMCDAcceptConfirmMsg struct {
 	smcdToken uint64 /* DMB token */
 	dmbeIdx   uint8  /* DMBE index */
 	dmbeSize  uint8  /* 4 bits buf size (compressed) */
-	reserved3 uint8  /* 4 bits reserved */
-	reserved4 uint16
+	reserved  byte   /* 4 bits reserved */
+	reserved2 [2]byte
 	linkid    uint32 /* Link identifier */
-	reserved5 [12]byte
+	reserved3 [12]byte
 }
 
 // convert CLC SMC-D Accept/Confirm to string
 func (ac *clcSMCDAcceptConfirmMsg) String() string {
-	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
-		"DMBE Size %d, Link ID: %d"
-
 	if ac == nil {
 		return "n/a"
 	}
+
+	if *showReserved {
+		acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
+			"DMBE Size %d, reserved: %#x, reserved: %#x, " +
+			"Link ID: %d, reserved: %#x"
+		return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
+			ac.dmbeSize, ac.reserved, ac.reserved2, ac.linkid,
+			ac.reserved3)
+	}
+	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
+		"DMBE Size %d, Link ID: %d"
 	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
 		ac.dmbeSize, ac.linkid)
 }
@@ -232,8 +263,6 @@ type clcDeclineMsg struct {
 
 // convert CLC Decline Message to string
 func (d *clcDeclineMsg) String() string {
-	declineFmt := "Sender Peer ID: %s, Peer Diagnosis: %s"
-
 	if d == nil {
 		return "n/a"
 	}
@@ -289,6 +318,13 @@ func (d *clcDeclineMsg) String() string {
 		diag = "Unknown"
 	}
 
+	if *showReserved {
+		declineFmt := "Sender Peer ID: %s, Peer Diagnosis: %s, " +
+			"reserved: %#x"
+		return fmt.Sprintf(declineFmt, d.senderPeerID, diag,
+			d.reserved)
+	}
+	declineFmt := "Sender Peer ID: %s, Peer Diagnosis: %s"
 	return fmt.Sprintf(declineFmt, d.senderPeerID, diag)
 }
 
@@ -303,11 +339,11 @@ type clcMessage struct {
 	// total length of message
 	length uint16
 
-	// 1 byte bitfield containing version, flag, rsvd, path:
-	version uint8 // (4 bits)
-	flag    uint8 // (1 bit)
-	rsvd    uint8 // (1 bit)
-	path    path  // (2 bits)
+	// 1 byte bitfield containing version, flag, reserved, path:
+	version  uint8 // (4 bits)
+	flag     uint8 // (1 bit)
+	reserved byte  // (1 bit)
+	path     path  // (2 bits)
 
 	// type depenent message content
 	proposal *clcProposalMsg
@@ -343,8 +379,6 @@ func (c *clcMessage) parse(buf []byte) {
 
 // convert header fields to a string
 func (c *clcMessage) String() string {
-	headerFmt := "%s: eyecatcher: %s, length: %d, version: %d, " +
-		"flag: %d, rsvd: %d, path: %s, %s, trailer: %s"
 	var typ string
 	var msg string
 
@@ -372,8 +406,16 @@ func (c *clcMessage) String() string {
 	}
 
 	// construct string
+	if *showReserved {
+		headerFmt := "%s: eyecatcher: %s, length: %d, version: %d, " +
+			"flag: %d, reserved: %#x, path: %s, %s, trailer: %s"
+		return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length,
+			c.version, c.flag, c.reserved, c.path, msg, c.trailer)
+	}
+	headerFmt := "%s: eyecatcher: %s, length: %d, version: %d, " +
+		"flag: %d, path: %s, %s, trailer: %s"
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length, c.version,
-		c.flag, c.rsvd, c.path, msg, c.trailer)
+		c.flag, c.path, msg, c.trailer)
 }
 
 // check if there is a SMC-R or SMC-D eyecatcher in the buffer
@@ -420,7 +462,7 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 		buf = buf[8:]
 
 		// reserved
-		copy(proposal.res[:], buf[:32])
+		copy(proposal.reserved[:], buf[:32])
 		buf = buf[32:]
 	} else {
 		buf = buf[proposal.ipAreaOffset:]
@@ -436,7 +478,7 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 	buf = buf[1:]
 
 	// reserved
-	copy(proposal.reserved[:], buf[0:2])
+	copy(proposal.reserved2[:], buf[:2])
 	buf = buf[2:]
 
 	// ipv6 prefix count
@@ -491,7 +533,7 @@ func parseSMCRAcceptConfirm(
 	buf = buf[1:]
 
 	// reserved
-	ac.reserved = uint8(buf[0])
+	ac.reserved = buf[0]
 	buf = buf[1:]
 
 	// rmb DMA addr
@@ -499,7 +541,7 @@ func parseSMCRAcceptConfirm(
 	buf = buf[8:]
 
 	// reserved
-	ac.reserved2 = uint8(buf[0])
+	ac.reserved2 = buf[0]
 	buf = buf[1:]
 
 	// Packet Sequence Number is 3 bytes
@@ -533,11 +575,11 @@ func parseSMCDAcceptConfirm(
 
 	// 1 byte bitfield: dmbe size (4 bits), reserved (4 bits)
 	ac.dmbeSize = (uint8(buf[0]) & 0b11110000) >> 4
-	ac.reserved3 = (uint8(buf[0]) & 0b00001111)
+	ac.reserved = buf[0] & 0b00001111
 	buf = buf[1:]
 
 	// reserved
-	ac.reserved4 = binary.BigEndian.Uint16(buf[:2])
+	copy(ac.reserved2[:], buf[:2])
 	buf = buf[2:]
 
 	// link id
@@ -545,7 +587,7 @@ func parseSMCDAcceptConfirm(
 	buf = buf[4:]
 
 	// reserved
-	copy(ac.reserved5[:], buf[:12])
+	copy(ac.reserved3[:], buf[:12])
 	buf = buf[12:]
 
 	return &ac
@@ -611,7 +653,7 @@ func parseCLCHeader(buf []byte) *clcMessage {
 	bitfield := buf[7]
 	header.version = (bitfield & 0b11110000) >> 4
 	header.flag = (bitfield & 0b00001000) >> 3
-	header.rsvd = (bitfield & 0b00000100) >> 2
+	header.reserved = (bitfield & 0b00000100) >> 2
 	header.path = path(bitfield & 0b00000011)
 
 	return &header
