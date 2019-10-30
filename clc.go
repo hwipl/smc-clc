@@ -148,7 +148,7 @@ type clcSMCRAcceptConfirmMsg struct {
 // convert CLC SMC-R Accept/Confirm to string
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
-		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d," +
+		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d, " +
 		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %d, " +
 		"trailer: %v"
 
@@ -280,7 +280,7 @@ type clcHeader struct { /* header1 of clc messages */
 // convert header fields to a string
 func (c *clcHeader) String() string {
 	headerFmt := "%s (eyecatcher: %s, length: %d, version: %d, " +
-		"flag %d, rsvd: %d, path %d)"
+		"flag: %d, rsvd: %d, path: %d)"
 	var typ string
 
 	// message type
@@ -318,35 +318,54 @@ func parseCLCProposal(hdr *clcHeader, buf []byte) *clcProposalMsg {
 	proposal := clcProposalMsg{}
 	proposal.hdr = hdr
 
-	// parse message content
+	// skip clc header
 	buf = buf[clcHeaderLen:]
+
+	// sender peer ID
 	copy(proposal.senderPeerID[:], buf[:peerIDLen])
 	buf = buf[peerIDLen:]
+
+	// ib GID is an IPv6 address
 	proposal.ibGID = make(net.IP, 16)
 	copy(proposal.ibGID[:], buf[:16])
 	buf = buf[16:]
+
+	// ib MAC is a 6 byte MAC address
 	proposal.ibMAC = make(net.HardwareAddr, 6)
 	copy(proposal.ibMAC[:], buf[:6])
 	buf = buf[6:]
+
+	// offset to ip area
 	proposal.ipAreaOffset = binary.BigEndian.Uint16(buf[:2])
 	buf = buf[2:]
+
+	// Optional SMC-D info
 	if proposal.ipAreaOffset == 40 {
-		// Optional SMC-D info
+		// smcd GID
 		proposal.smcdGID = binary.BigEndian.Uint64(buf[:8])
 		buf = buf[8:]
+
+		// reserved
 		copy(proposal.res[:], buf[:32])
 		buf = buf[32:]
 	} else {
 		buf = buf[proposal.ipAreaOffset:]
 	}
-	// IP/prefix info
+
+	// IP/prefix is an IPv4 address
 	proposal.prefix = make(net.IP, 4)
 	copy(proposal.prefix[:], buf[:4])
 	buf = buf[4:]
+
+	// prefix length
 	proposal.prefixLen = uint8(buf[0])
 	buf = buf[1:]
+
+	// reserved
 	copy(proposal.reserved[:], buf[0:2])
 	buf = buf[2:]
+
+	// ipv6 prefix count
 	proposal.ipv6PrefixesCnt = uint8(buf[0])
 
 	return &proposal
@@ -357,33 +376,55 @@ func parseSMCRAcceptConfirm(
 	hdr *clcHeader, buf []byte) *clcSMCRAcceptConfirmMsg {
 	ac := clcSMCRAcceptConfirmMsg{}
 
-	// parse message content
+	// skip clc header
 	buf = buf[clcHeaderLen:]
+
+	// sender peer ID
 	copy(ac.senderPeerID[:], buf[:peerIDLen])
 	buf = buf[peerIDLen:]
+
+	// ib GID is an IPv6 Address
 	ac.ibGID = make(net.IP, 16)
 	copy(ac.ibGID[:], buf[:16])
 	buf = buf[16:]
+
+	// ib MAC is a 6 byte MAC address
 	ac.ibMAC = make(net.HardwareAddr, 6)
 	copy(ac.ibMAC[:], buf[:6])
 	buf = buf[6:]
+
+	// QP number is 3 bytes
 	ac.qpn = int(buf[0]) << 16
 	ac.qpn |= int(buf[1]) << 8
 	ac.qpn |= int(buf[2])
 	buf = buf[3:]
+
+	// rmb Rkey
 	ac.rmbRkey = binary.BigEndian.Uint32(buf[:4])
 	buf = buf[4:]
+
+	// rmbe Idx
 	ac.rmbeIdx = uint8(buf[0])
 	buf = buf[1:]
+
+	// rmbe alert token
 	ac.rmbeAlertToken = binary.BigEndian.Uint32(buf[:4])
 	buf = buf[4:]
+
+	// 1 byte bitfield: rmbe size (4 bits) and qp mtu (4 bits)
 	ac.rmbeSize = (uint8(buf[0]) & 0b11110000) >> 4
 	ac.qpMtu = (uint8(buf[0]) & 0b00001111)
 	buf = buf[1:]
+
+	// reserved
 	ac.reserved = uint8(buf[0])
 	buf = buf[1:]
+
+	// rmb DMA addr
 	ac.rmbDmaAddr = binary.BigEndian.Uint64(buf[:8])
 	buf = buf[8:]
+
+	// reserved
 	ac.reserved2 = uint8(buf[0])
 	buf = buf[1:]
 
@@ -393,6 +434,7 @@ func parseSMCRAcceptConfirm(
 	ac.psn |= int(buf[2])
 	buf = buf[3:]
 
+	// trailer
 	copy(ac.trailer[:], buf[:4])
 
 	return &ac
@@ -403,23 +445,39 @@ func parseSMCDAcceptConfirm(
 	hdr *clcHeader, buf []byte) *clcSMCDAcceptConfirmMsg {
 	ac := clcSMCDAcceptConfirmMsg{}
 
-	// parse message content
+	// skip clc header
 	buf = buf[clcHeaderLen:]
+
+	// smcd GID
 	ac.smcdGID = binary.BigEndian.Uint64(buf[:8])
 	buf = buf[8:]
+
+	// smcd Token
 	ac.smcdToken = binary.BigEndian.Uint64(buf[:8])
 	buf = buf[8:]
+
+	// dmbe index
 	ac.dmbeIdx = uint8(buf[0])
 	buf = buf[1:]
+
+	// 1 byte bitfield: dmbe size (4 bits), reserved (4 bits)
 	ac.dmbeSize = (uint8(buf[0]) & 0b11110000) >> 4
 	ac.reserved3 = (uint8(buf[0]) & 0b00001111)
 	buf = buf[1:]
+
+	// reserved
 	ac.reserved4 = binary.BigEndian.Uint16(buf[:2])
 	buf = buf[2:]
+
+	// link id
 	ac.linkid = binary.BigEndian.Uint32(buf[:4])
 	buf = buf[4:]
+
+	// reserved
 	copy(ac.reserved5[:], buf[:12])
 	buf = buf[12:]
+
+	// trailer
 	copy(ac.smcdTrailer[:], buf[:4])
 
 	return &ac
@@ -445,14 +503,22 @@ func parseCLCDecline(hdr *clcHeader, buf []byte) *clcDeclineMsg {
 	decline := clcDeclineMsg{}
 	decline.hdr = hdr
 
-	// parse message content
+	// skip clc header
 	buf = buf[clcHeaderLen:]
+
+	// sender peer ID
 	copy(decline.senderPeerID[:], buf[:peerIDLen])
 	buf = buf[peerIDLen:]
+
+	// peer diagnosis
 	decline.peerDiagnosis = binary.BigEndian.Uint32(buf[:4])
 	buf = buf[4:]
+
+	// reserved
 	copy(decline.reserved[:], buf[:4])
 	buf = buf[4:]
+
+	// trailer
 	copy(decline.trailer[:], buf[:4])
 
 	return &decline
@@ -467,11 +533,16 @@ func parseCLCHeader(buf []byte) *clcHeader {
 		return nil
 	}
 
+	// eyecatcher
 	copy(header.eyecatcher[:], buf[0:4])
+
+	// type
 	header.typ = buf[4]
+
+	// length
 	header.length = binary.BigEndian.Uint16(buf[5:7])
 
-	// parse bitfield
+	// 1 byte bitfield: version, flag, reserved, path
 	bitfield := buf[7]
 	header.version = (bitfield & 0b11110000) >> 4
 	header.flag = (bitfield & 0b00001000) >> 3
