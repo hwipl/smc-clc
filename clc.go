@@ -99,7 +99,7 @@ func (p peerID) String() string {
 
 // CLC Proposal Message
 type clcProposalMsg struct {
-	hdr          *clcHeader
+	hdr          *clcMessage
 	senderPeerID peerID           /* unique system id */
 	ibGID        net.IP           /* gid of ib_device port */
 	ibMAC        net.HardwareAddr /* mac of ib_device port */
@@ -122,6 +122,9 @@ func (p *clcProposalMsg) String() string {
 		"ip area offset: %d, SMC-D GID: %d, " +
 		"prefix: %s/%d, ipv6 prefix count: %d"
 
+	if p == nil {
+		return "n/a"
+	}
 	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID, p.ibMAC,
 		p.ipAreaOffset, p.smcdGID, p.prefix, p.prefixLen,
 		p.ipv6PrefixesCnt)
@@ -141,53 +144,59 @@ type clcSMCRAcceptConfirmMsg struct {
 	reserved       uint8
 	rmbDmaAddr     uint64 /* RMB virtual address */
 	reserved2      uint8
-	psn            int        /* packet sequence number */
-	trailer        eyecatcher /* eye catcher "SMCR" EBCDIC */
+	psn            int /* packet sequence number */
 }
 
 // convert CLC SMC-R Accept/Confirm to string
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
 		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d, " +
-		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %d, " +
-		"trailer: %v"
+		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %d"
 
+	if ac == nil {
+		return "n/a"
+	}
 	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC, ac.qpn,
 		ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken, ac.rmbeSize,
-		ac.qpMtu, ac.rmbDmaAddr, ac.psn, ac.trailer)
+		ac.qpMtu, ac.rmbDmaAddr, ac.psn)
 }
 
 // CLC SMC-D Accept/Confirm Message
 type clcSMCDAcceptConfirmMsg struct {
-	smcdGID     uint64 /* Sender GID */
-	smcdToken   uint64 /* DMB token */
-	dmbeIdx     uint8  /* DMBE index */
-	dmbeSize    uint8  // 4 bits /* buf size (compressed) */
-	reserved3   uint8  // 4 bits
-	reserved4   uint16
-	linkid      uint32 /* Link identifier */
-	reserved5   [12]byte
-	smcdTrailer eyecatcher
+	smcdGID   uint64 /* Sender GID */
+	smcdToken uint64 /* DMB token */
+	dmbeIdx   uint8  /* DMBE index */
+	dmbeSize  uint8  // 4 bits /* buf size (compressed) */
+	reserved3 uint8  // 4 bits
+	reserved4 uint16
+	linkid    uint32 /* Link identifier */
+	reserved5 [12]byte
 }
 
 // convert CLC SMC-D Accept/Confirm to string
 func (ac *clcSMCDAcceptConfirmMsg) String() string {
 	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
-		"DMBE Size %d, Link ID: %d, trailer: %v"
+		"DMBE Size %d, Link ID: %d"
 
+	if ac == nil {
+		return "n/a"
+	}
 	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
-		ac.dmbeSize, ac.linkid, ac.smcdTrailer)
+		ac.dmbeSize, ac.linkid)
 }
 
 // CLC Accept/Confirm Message
 type clcAcceptConfirmMsg struct {
-	hdr  *clcHeader
+	hdr  *clcMessage
 	smcr *clcSMCRAcceptConfirmMsg
 	smcd *clcSMCDAcceptConfirmMsg
 }
 
 // convert CLC Accept/Confirm to string
 func (ac *clcAcceptConfirmMsg) String() string {
+	if ac == nil {
+		return "n/a"
+	}
 	if ac.smcr != nil {
 		return ac.smcr.String()
 	}
@@ -199,16 +208,19 @@ func (ac *clcAcceptConfirmMsg) String() string {
 
 // CLC Decline Message
 type clcDeclineMsg struct {
-	hdr           *clcHeader
+	hdr           *clcMessage
 	senderPeerID  peerID /* sender peer_id */
 	peerDiagnosis uint32 /* diagnosis information */
 	reserved      [4]byte
-	trailer       eyecatcher /* eye catcher "SMCR" EBCDIC */
 }
 
 // convert CLC Decline Message to string
 func (d *clcDeclineMsg) String() string {
 	declineFmt := "Sender Peer ID: %s, Peer Diagnosis: %s"
+
+	if d == nil {
+		return "n/a"
+	}
 
 	// parse peer diagnosis code
 	var diag string
@@ -264,42 +276,88 @@ func (d *clcDeclineMsg) String() string {
 	return fmt.Sprintf(declineFmt, d.senderPeerID, diag)
 }
 
-// CLC header
-type clcHeader struct { /* header1 of clc messages */
+// CLC message
+type clcMessage struct {
+	// eyecatcher
 	eyecatcher eyecatcher
-	typ        uint8 /* proposal / accept / confirm / decline */
-	length     uint16
+
+	// type of message: proposal, accept, confirm, decline
+	typ uint8
+
+	// total length of message
+	length uint16
 
 	// 1 byte bitfield containing version, flag, rsvd, path:
 	version uint8 // (4 bits)
 	flag    uint8 // (1 bit)
 	rsvd    uint8 // (1 bit)
 	path    uint8 // (2 bits)
+
+	// type depenent message content
+	proposal *clcProposalMsg
+	accept   *clcAcceptConfirmMsg
+	confirm  *clcAcceptConfirmMsg
+	decline  *clcDeclineMsg
+
+	// trailer
+	trailer eyecatcher
+}
+
+// parse CLC message
+func (c *clcMessage) parse(buf []byte) {
+	// trailer
+	copy(c.trailer[:], buf[c.length-4:])
+	if !hasEyecatcher(c.trailer[:]) {
+		log.Println("Invalid message trailer")
+		return
+	}
+
+	// parse type dependent message content
+	switch c.typ {
+	case clcProposal:
+		c.proposal = parseCLCProposal(c, buf)
+	case clcAccept:
+		c.accept = parseCLCAcceptConfirm(c, buf)
+	case clcConfirm:
+		c.confirm = parseCLCAcceptConfirm(c, buf)
+	case clcDecline:
+		c.decline = parseCLCDecline(c, buf)
+	}
 }
 
 // convert header fields to a string
-func (c *clcHeader) String() string {
-	headerFmt := "%s (eyecatcher: %s, length: %d, version: %d, " +
-		"flag: %d, rsvd: %d, path: %d)"
+func (c *clcMessage) String() string {
+	headerFmt := "%s: eyecatcher: %s, length: %d, version: %d, " +
+		"flag: %d, rsvd: %d, path: %d, %s, trailer: %s"
 	var typ string
+	var msg string
+
+	if c == nil {
+		return "n/a"
+	}
 
 	// message type
 	switch c.typ {
 	case clcProposal:
 		typ = "Proposal"
+		msg = c.proposal.String()
 	case clcAccept:
 		typ = "Accept"
+		msg = c.accept.String()
 	case clcConfirm:
 		typ = "Confirm"
+		msg = c.confirm.String()
 	case clcDecline:
 		typ = "Decline"
+		msg = c.decline.String()
 	default:
 		typ = "Unknown"
+		msg = "n/a"
 	}
 
 	// construct string
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length, c.version,
-		c.flag, c.rsvd, c.path)
+		c.flag, c.rsvd, c.path, msg, c.trailer)
 }
 
 // check if there is a SMC-R or SMC-D eyecatcher in the buffer
@@ -314,7 +372,7 @@ func hasEyecatcher(buf []byte) bool {
 }
 
 // parse CLC Proposal in buffer
-func parseCLCProposal(hdr *clcHeader, buf []byte) *clcProposalMsg {
+func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 	proposal := clcProposalMsg{}
 	proposal.hdr = hdr
 
@@ -373,7 +431,7 @@ func parseCLCProposal(hdr *clcHeader, buf []byte) *clcProposalMsg {
 
 // parse SMC-R Accept/Confirm Message
 func parseSMCRAcceptConfirm(
-	hdr *clcHeader, buf []byte) *clcSMCRAcceptConfirmMsg {
+	hdr *clcMessage, buf []byte) *clcSMCRAcceptConfirmMsg {
 	ac := clcSMCRAcceptConfirmMsg{}
 
 	// skip clc header
@@ -434,15 +492,12 @@ func parseSMCRAcceptConfirm(
 	ac.psn |= int(buf[2])
 	buf = buf[3:]
 
-	// trailer
-	copy(ac.trailer[:], buf[:4])
-
 	return &ac
 }
 
 // parse SMC-D Accept/Confirm Message
 func parseSMCDAcceptConfirm(
-	hdr *clcHeader, buf []byte) *clcSMCDAcceptConfirmMsg {
+	hdr *clcMessage, buf []byte) *clcSMCDAcceptConfirmMsg {
 	ac := clcSMCDAcceptConfirmMsg{}
 
 	// skip clc header
@@ -477,14 +532,11 @@ func parseSMCDAcceptConfirm(
 	copy(ac.reserved5[:], buf[:12])
 	buf = buf[12:]
 
-	// trailer
-	copy(ac.smcdTrailer[:], buf[:4])
-
 	return &ac
 }
 
 // parse Accept/Confirm Message
-func parseCLCAcceptConfirm(hdr *clcHeader, buf []byte) *clcAcceptConfirmMsg {
+func parseCLCAcceptConfirm(hdr *clcMessage, buf []byte) *clcAcceptConfirmMsg {
 	ac := clcAcceptConfirmMsg{}
 	ac.hdr = hdr
 
@@ -499,7 +551,7 @@ func parseCLCAcceptConfirm(hdr *clcHeader, buf []byte) *clcAcceptConfirmMsg {
 }
 
 // parse CLC Decline in buffer
-func parseCLCDecline(hdr *clcHeader, buf []byte) *clcDeclineMsg {
+func parseCLCDecline(hdr *clcMessage, buf []byte) *clcDeclineMsg {
 	decline := clcDeclineMsg{}
 	decline.hdr = hdr
 
@@ -518,15 +570,12 @@ func parseCLCDecline(hdr *clcHeader, buf []byte) *clcDeclineMsg {
 	copy(decline.reserved[:], buf[:4])
 	buf = buf[4:]
 
-	// trailer
-	copy(decline.trailer[:], buf[:4])
-
 	return &decline
 }
 
 // parse CLC header in buffer
-func parseCLCHeader(buf []byte) *clcHeader {
-	header := clcHeader{}
+func parseCLCHeader(buf []byte) *clcMessage {
+	header := clcMessage{}
 
 	// check eyecatcher first
 	if !hasEyecatcher(buf) {
@@ -577,7 +626,7 @@ func (h *smcStreamFactory) New(
 }
 
 // print CLC info of stream
-func printCLC(s *smcStream, clc *clcHeader) {
+func printCLC(s *smcStream, clc *clcMessage) {
 	clcFmt := "%s:%s -> %s:%s: %s\n"
 
 	fmt.Printf(clcFmt, s.net.Src(), s.transport.Src(), s.net.Dst(),
@@ -586,7 +635,7 @@ func printCLC(s *smcStream, clc *clcHeader) {
 
 // parse smc stream
 func (s *smcStream) run() {
-	var clc *clcHeader
+	var clc *clcMessage
 	buf := make([]byte, 2048)
 	// get at least enough bytes for the CLC header
 	skip := clcHeaderLen
@@ -609,31 +658,9 @@ func (s *smcStream) run() {
 
 		// parse and print current CLC message
 		if clc != nil {
-			// print header
-			printCLC(s, clc)
-
 			// parse and print message
-			switch clc.typ {
-			case clcProposal:
-				proposal := parseCLCProposal(clc,
-					buf[skip-int(clc.length):])
-				fmt.Println("   ", proposal)
-
-			case clcAccept:
-				accept := parseCLCAcceptConfirm(clc,
-					buf[skip-int(clc.length):])
-				fmt.Println("   ", accept)
-
-			case clcConfirm:
-				confirm := parseCLCAcceptConfirm(clc,
-					buf[skip-int(clc.length):])
-				fmt.Println("   ", confirm)
-
-			case clcDecline:
-				decline := parseCLCDecline(clc,
-					buf[skip-clcDeclineLen:])
-				fmt.Println("   ", decline)
-			}
+			clc.parse(buf[skip-int(clc.length):])
+			printCLC(s, clc)
 
 			// wait for next handshake message
 			clc = nil
