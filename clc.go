@@ -145,6 +145,14 @@ func (m qpMTU) String() string {
 	return fmt.Sprintf("%d (%s)", m, mtu)
 }
 
+// SMC RMBE size
+type rmbeSize uint8
+
+func (s rmbeSize) String() string {
+	size := 1 << (s + 14)
+	return fmt.Sprintf("%d (%d)", s, size)
+}
+
 // CLC Proposal Message
 type clcProposalMsg struct {
 	hdr          *clcMessage
@@ -195,7 +203,7 @@ type clcSMCRAcceptConfirmMsg struct {
 	rmbRkey        uint32           /* RMB rkey */
 	rmbeIdx        uint8            /* Index of RMBE in RMB */
 	rmbeAlertToken uint32           /* unique connection id */
-	rmbeSize       uint8            /* 4 bits buf size (compressed) */
+	rmbeSize       rmbeSize         /* 4 bits buf size (compressed) */
 	qpMtu          qpMTU            /* 4 bits QP mtu */
 	reserved       byte
 	rmbDmaAddr     uint64 /* RMB virtual address */
@@ -212,7 +220,7 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	if *showReserved {
 		acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
 			"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, " +
-			"rmbe Alert Token: %d, rmbe Size: %d, qp MTU: %s, " +
+			"rmbe Alert Token: %d, rmbe Size: %s, qp MTU: %s, " +
 			"reserved: %#x, rmb DMA address: %#x, " +
 			"reserved: %#x, psn: %d"
 		return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC,
@@ -222,7 +230,7 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	}
 	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
 		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d, " +
-		"rmbe Size: %d, qp MTU: %s, rmb DMA address: %#x, psn: %d"
+		"rmbe Size: %s, qp MTU: %s, rmb DMA address: %#x, psn: %d"
 	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC, ac.qpn,
 		ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken, ac.rmbeSize,
 		ac.qpMtu, ac.rmbDmaAddr, ac.psn)
@@ -230,11 +238,11 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 
 // CLC SMC-D Accept/Confirm Message
 type clcSMCDAcceptConfirmMsg struct {
-	smcdGID   uint64 /* Sender GID */
-	smcdToken uint64 /* DMB token */
-	dmbeIdx   uint8  /* DMBE index */
-	dmbeSize  uint8  /* 4 bits buf size (compressed) */
-	reserved  byte   /* 4 bits reserved */
+	smcdGID   uint64   /* Sender GID */
+	smcdToken uint64   /* DMB token */
+	dmbeIdx   uint8    /* DMBE index */
+	dmbeSize  rmbeSize /* 4 bits buf size (compressed) */
+	reserved  byte     /* 4 bits reserved */
 	reserved2 [2]byte
 	linkid    uint32 /* Link identifier */
 	reserved3 [12]byte
@@ -248,14 +256,14 @@ func (ac *clcSMCDAcceptConfirmMsg) String() string {
 
 	if *showReserved {
 		acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
-			"DMBE Size %d, reserved: %#x, reserved: %#x, " +
+			"DMBE Size %s, reserved: %#x, reserved: %#x, " +
 			"Link ID: %d, reserved: %#x"
 		return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
 			ac.dmbeSize, ac.reserved, ac.reserved2, ac.linkid,
 			ac.reserved3)
 	}
 	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
-		"DMBE Size %d, Link ID: %d"
+		"DMBE Size %s, Link ID: %d"
 	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
 		ac.dmbeSize, ac.linkid)
 }
@@ -556,7 +564,7 @@ func parseSMCRAcceptConfirm(
 	buf = buf[4:]
 
 	// 1 byte bitfield: rmbe size (4 bits) and qp mtu (4 bits)
-	ac.rmbeSize = (uint8(buf[0]) & 0b11110000) >> 4
+	ac.rmbeSize = rmbeSize((uint8(buf[0]) & 0b11110000) >> 4)
 	ac.qpMtu = qpMTU(uint8(buf[0]) & 0b00001111)
 	buf = buf[1:]
 
@@ -602,7 +610,7 @@ func parseSMCDAcceptConfirm(
 	buf = buf[1:]
 
 	// 1 byte bitfield: dmbe size (4 bits), reserved (4 bits)
-	ac.dmbeSize = (uint8(buf[0]) & 0b11110000) >> 4
+	ac.dmbeSize = rmbeSize((uint8(buf[0]) & 0b11110000) >> 4)
 	ac.reserved = buf[0] & 0b00001111
 	buf = buf[1:]
 
