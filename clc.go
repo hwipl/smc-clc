@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -24,6 +25,7 @@ var (
 	// display variables
 	showReserved = flag.Bool("reserved", false,
 		"print reserved values in messages")
+	showTimestamps = flag.Bool("timestamps", true, "print timestamps")
 
 	// flow table
 	flows = make(map[gopacket.Flow]map[gopacket.Flow]bool)
@@ -724,9 +726,13 @@ func (h *smcStreamFactory) New(
 
 // print CLC info of stream
 func printCLC(s *smcStream, clc *clcMessage) {
-	clcFmt := "%s:%s -> %s:%s: %s\n"
+	clcFmt := "%s%s:%s -> %s:%s: %s\n"
+	t := ""
 
-	fmt.Printf(clcFmt, s.net.Src(), s.transport.Src(), s.net.Dst(),
+	if *showTimestamps {
+		t = time.Now().Format("15:04:05.000000 ")
+	}
+	fmt.Printf(clcFmt, t, s.net.Src(), s.transport.Src(), s.net.Dst(),
 		s.transport.Dst(), clc)
 }
 
