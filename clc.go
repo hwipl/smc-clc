@@ -141,7 +141,7 @@ type clcSMCRAcceptConfirmMsg struct {
 	reserved       uint8
 	rmbDmaAddr     uint64 /* RMB virtual address */
 	reserved2      uint8
-	psn            [3]byte    /* packet sequence number */
+	psn            int        /* packet sequence number */
 	trailer        eyecatcher /* eye catcher "SMCR" EBCDIC */
 }
 
@@ -149,7 +149,7 @@ type clcSMCRAcceptConfirmMsg struct {
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	acFmt := "Sender Peer ID: %s, ib GID: %s, ib MAC: %s, " +
 		"qpn: %d, rmb Rkey: %d, rmbe Idx: %d, rmbe Alert Token: %d," +
-		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %v, " +
+		"rmbe Size: %d, qp MTU: %d, rmb DMA address: %d, psn: %d, " +
 		"trailer: %v"
 
 	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC, ac.qpn,
@@ -386,8 +386,13 @@ func parseSMCRAcceptConfirm(
 	buf = buf[8:]
 	ac.reserved2 = uint8(buf[0])
 	buf = buf[1:]
-	copy(ac.psn[:], buf[:3])
+
+	// Packet Sequence Number is 3 bytes
+	ac.psn = int(buf[0]) << 16
+	ac.psn |= int(buf[1]) << 8
+	ac.psn |= int(buf[2])
 	buf = buf[3:]
+
 	copy(ac.trailer[:], buf[:4])
 
 	return &ac
