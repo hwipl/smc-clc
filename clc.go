@@ -139,8 +139,8 @@ type clcSMCRAcceptConfirmMsg struct {
 	rmbRkey        uint32           /* RMB rkey */
 	rmbeIdx        uint8            /* Index of RMBE in RMB */
 	rmbeAlertToken uint32           /* unique connection id */
-	rmbeSize       uint8            // 4 bits /* buf size (compressed) */
-	qpMtu          uint8            // 4 bits /* QP mtu */
+	rmbeSize       uint8            /* 4 bits buf size (compressed) */
+	qpMtu          uint8            /* 4 bits QP mtu */
 	reserved       uint8
 	rmbDmaAddr     uint64 /* RMB virtual address */
 	reserved2      uint8
@@ -166,8 +166,8 @@ type clcSMCDAcceptConfirmMsg struct {
 	smcdGID   uint64 /* Sender GID */
 	smcdToken uint64 /* DMB token */
 	dmbeIdx   uint8  /* DMBE index */
-	dmbeSize  uint8  // 4 bits /* buf size (compressed) */
-	reserved3 uint8  // 4 bits
+	dmbeSize  uint8  /* 4 bits buf size (compressed) */
+	reserved3 uint8  /* 4 bits reserved */
 	reserved4 uint16
 	linkid    uint32 /* Link identifier */
 	reserved5 [12]byte
@@ -719,6 +719,7 @@ func listen() {
 	assembler := tcpassembly.NewAssembler(streamPool)
 
 	// Use the handle as a packet source to process all packets
+	fmt.Printf("Starting to listen on interface %s.\n", *pcapDevice)
 	packetSource := gopacket.NewPacketSource(pcapHandle,
 		pcapHandle.LinkType())
 	for packet := range packetSource.Packets() {
