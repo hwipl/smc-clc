@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/google/gopacket"
@@ -28,7 +29,7 @@ var (
 	showTimestamps = flag.Bool("timestamps", true, "print timestamps")
 
 	// flow table
-	flows = make(map[gopacket.Flow]map[gopacket.Flow]bool)
+	flows flowTable
 )
 
 // smc definitions
@@ -80,6 +81,54 @@ const (
 	clcDeclineErrRdyLnk  = 0x09990002 /* ib ready link failed */
 	clcDeclineErrRegRMB  = 0x09990003 /* reg rmb failed */
 )
+
+// flow table
+type flowTable struct {
+	lock sync.Mutex
+	fmap map[gopacket.Flow]map[gopacket.Flow]bool
+}
+
+// init flow table
+func (ft *flowTable) init() {
+	ft.lock.Lock()
+	if ft.fmap == nil {
+		ft.fmap = make(map[gopacket.Flow]map[gopacket.Flow]bool)
+	}
+	ft.lock.Unlock()
+}
+
+// add entry to flow table
+func (ft *flowTable) add(net, trans gopacket.Flow) {
+	ft.lock.Lock()
+	if ft.fmap[net] == nil {
+		ft.fmap[net] = make(map[gopacket.Flow]bool)
+	}
+
+	ft.fmap[net][trans] = true
+	ft.lock.Unlock()
+}
+
+// remove entry from flow table
+func (ft *flowTable) del(net, trans gopacket.Flow) {
+	ft.lock.Lock()
+	if ft.fmap[net] != nil {
+		delete(ft.fmap[net], trans)
+	}
+	ft.lock.Unlock()
+}
+
+// get entry from flow table
+func (ft *flowTable) get(net, trans gopacket.Flow) bool {
+	check := false
+
+	ft.lock.Lock()
+	if ft.fmap[net] != nil {
+		check = ft.fmap[net][trans]
+	}
+	ft.lock.Unlock()
+
+	return check
+}
 
 // SMC eyecatcher
 type eyecatcher [4]byte
@@ -789,6 +838,9 @@ func (s *smcStream) run() {
 
 	// discard everything
 	tcpreader.DiscardBytesToEOF(&s.r)
+
+	// remove entry from flow table
+	flows.del(s.net, s.transport)
 }
 
 // check if SMC option is set in TCP header
@@ -821,6 +873,9 @@ func listen() {
 	streamPool := tcpassembly.NewStreamPool(streamFactory)
 	assembler := tcpassembly.NewAssembler(streamPool)
 
+	// init flow table
+	flows.init()
+
 	// Use the handle as a packet source to process all packets
 	fmt.Printf("Starting to listen on interface %s.\n", *pcapDevice)
 	packetSource := gopacket.NewPacketSource(pcapHandle,
@@ -841,11 +896,8 @@ func listen() {
 		// if smc option is set, try to parse tcp stream
 		nflow := packet.NetworkLayer().NetworkFlow()
 		tflow := packet.TransportLayer().TransportFlow()
-		if checkSMCOption(tcp) || flows[nflow][tflow] {
-			if flows[nflow] == nil {
-				flows[nflow] = make(map[gopacket.Flow]bool)
-			}
-			flows[nflow][tflow] = true
+		if checkSMCOption(tcp) || flows.get(nflow, tflow) {
+			flows.add(nflow, tflow)
 			assembler.AssembleWithTimestamp(nflow, tcp,
 				packet.Metadata().Timestamp)
 		}
