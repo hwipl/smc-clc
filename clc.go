@@ -430,7 +430,7 @@ type clcMessage struct {
 
 	// 1 byte bitfield containing version, flag, reserved, path:
 	version  uint8 // (4 bits)
-	first    uint8 // (1 bit)
+	flag     uint8 // (1 bit)
 	reserved byte  // (1 bit)
 	path     path  // (2 bits)
 
@@ -470,6 +470,7 @@ func (c *clcMessage) parse(buf []byte) {
 func (c *clcMessage) String() string {
 	var typ string
 	var msg string
+	var flg string
 
 	if c == nil {
 		return "n/a"
@@ -480,32 +481,36 @@ func (c *clcMessage) String() string {
 	case clcProposal:
 		typ = "Proposal"
 		msg = c.proposal.String()
+		flg = fmt.Sprintf("Flag: %d", c.flag)
 	case clcAccept:
 		typ = "Accept"
 		msg = c.accept.String()
+		flg = fmt.Sprintf("First Contact: %d", c.flag)
 	case clcConfirm:
 		typ = "Confirm"
 		msg = c.confirm.String()
+		flg = fmt.Sprintf("Flag: %d", c.flag)
 	case clcDecline:
 		typ = "Decline"
 		msg = c.decline.String()
+		flg = fmt.Sprintf("Out of Sync: %d", c.flag)
 	default:
 		typ = "Unknown"
 		msg = "n/a"
+		flg = fmt.Sprintf("Flag: %d", c.flag)
 	}
 
 	// construct string
 	if *showReserved {
 		headerFmt := "%s: Eyecatcher: %s, Length: %d, Version: %d, " +
-			"First Contact: %d, Reserved: %#x, Path: %s, %s, " +
-			"Trailer: %s"
+			"%s, Reserved: %#x, Path: %s, %s, Trailer: %s"
 		return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length,
-			c.version, c.first, c.reserved, c.path, msg, c.trailer)
+			c.version, flg, c.reserved, c.path, msg, c.trailer)
 	}
 	headerFmt := "%s: Eyecatcher: %s, Length: %d, Version: %d, " +
-		"First Contact: %d, Path: %s, %s, Trailer: %s"
+		"%s, Path: %s, %s, Trailer: %s"
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length, c.version,
-		c.first, c.path, msg, c.trailer)
+		flg, c.path, msg, c.trailer)
 }
 
 // check if there is a SMC-R or SMC-D eyecatcher in the buffer
@@ -742,7 +747,7 @@ func parseCLCHeader(buf []byte) *clcMessage {
 	// 1 byte bitfield: version, flag, reserved, path
 	bitfield := buf[7]
 	header.version = (bitfield & 0b11110000) >> 4
-	header.first = (bitfield & 0b00001000) >> 3
+	header.flag = (bitfield & 0b00001000) >> 3
 	header.reserved = (bitfield & 0b00000100) >> 2
 	header.path = path(bitfield & 0b00000011)
 
