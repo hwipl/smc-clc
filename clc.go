@@ -204,6 +204,16 @@ func (s rmbeSize) String() string {
 	return fmt.Sprintf("%d (%d)", s, size)
 }
 
+// SMC IPv6 Prefix
+type ipv6Prefix struct {
+	prefix    net.IP
+	prefixLen uint8
+}
+
+func (p ipv6Prefix) String() string {
+	return fmt.Sprintf("%s/%d", p.prefix, p.prefixLen)
+}
+
 // CLC Proposal Message
 type clcProposalMsg struct {
 	hdr          *clcMessage
@@ -221,6 +231,7 @@ type clcProposalMsg struct {
 	prefixLen       uint8  /* number of significant bits in mask */
 	reserved2       [2]byte
 	ipv6PrefixesCnt uint8 /* number of IPv6 prefixes in prefix array */
+	ipv6Prefixes    []ipv6Prefix
 }
 
 // convert CLC Proposal to string
@@ -229,21 +240,28 @@ func (p *clcProposalMsg) String() string {
 		return "n/a"
 	}
 
+	// ipv6 prefixes
+	ipv6Prefixes := ""
+	for _, prefix := range p.ipv6Prefixes {
+		ipv6Prefixes += fmt.Sprintf(", IPv6 Prefix: %s", prefix)
+	}
+
 	if *showReserved {
 		proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s " +
 			"IP Area Offset: %d, SMC-D GID: %d, Reserved: %#x " +
 			"IPv4 Prefix: %s/%d, Reserved: %#x, " +
-			"IPv6 Prefix Count: %d"
+			"IPv6 Prefix Count: %d%s"
 		return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID,
 			p.ibMAC, p.ipAreaOffset, p.smcdGID, p.reserved,
-			p.prefix, p.prefixLen, p.reserved2, p.ipv6PrefixesCnt)
+			p.prefix, p.prefixLen, p.reserved2, p.ipv6PrefixesCnt,
+			ipv6Prefixes)
 	}
 	proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s " +
 		"IP Area Offset: %d, SMC-D GID: %d, " +
-		"IPv4 Prefix: %s/%d, IPv6 Prefix Count: %d"
+		"IPv4 Prefix: %s/%d, IPv6 Prefix Count: %d%s"
 	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID, p.ibMAC,
 		p.ipAreaOffset, p.smcdGID, p.prefix, p.prefixLen,
-		p.ipv6PrefixesCnt)
+		p.ipv6PrefixesCnt, ipv6Prefixes)
 }
 
 // CLC SMC-R Accept/Confirm Message
@@ -578,6 +596,27 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 
 	// ipv6 prefix count
 	proposal.ipv6PrefixesCnt = uint8(buf[0])
+
+	// parse ipv6 prefixes
+	for i := uint8(0); i < proposal.ipv6PrefixesCnt; i++ {
+		// skip prefix count or last prefix length
+		buf = buf[1:]
+
+		// create new ipv6 prefix entry
+		ip6prefix := ipv6Prefix{}
+
+		// parse prefix and fill prefix entry
+		ip6prefix.prefix = make(net.IP, 16)
+		copy(ip6prefix.prefix[:], buf[:16])
+		buf = buf[16:]
+
+		// parse prefix length and fill prefix entry
+		ip6prefix.prefixLen = uint8(buf[0])
+
+		// add to ipv6 prefixes
+		proposal.ipv6Prefixes = append(proposal.ipv6Prefixes,
+			ip6prefix)
+	}
 
 	return &proposal
 }
