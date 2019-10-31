@@ -838,7 +838,11 @@ func (s *smcStream) run() {
 
 	// discard everything
 	tcpreader.DiscardBytesToEOF(&s.r)
+}
 
+// ReassemblyComplete is called when the TCP assembler believes the stream has
+// finished
+func (s *smcStream) ReassemblyComplete() {
 	// remove entry from flow table
 	flows.del(s.net, s.transport)
 }
@@ -854,6 +858,42 @@ func checkSMCOption(tcp *layers.TCP) bool {
 	}
 
 	return false
+}
+
+// handle packet
+func handlePacket(assembler *tcpassembly.Assembler, packet gopacket.Packet) {
+	// only handle tcp packets (with valid network layer)
+	if packet.NetworkLayer() == nil ||
+		packet.TransportLayer() == nil ||
+		packet.TransportLayer().LayerType() !=
+			layers.LayerTypeTCP {
+		return
+	}
+	tcp, ok := packet.TransportLayer().(*layers.TCP)
+	if !ok {
+		log.Fatal("Error parsing TCP packet")
+	}
+
+	// if smc option is set, try to parse tcp stream
+	nflow := packet.NetworkLayer().NetworkFlow()
+	tflow := packet.TransportLayer().TransportFlow()
+	if checkSMCOption(tcp) || flows.get(nflow, tflow) {
+		flows.add(nflow, tflow)
+		assembler.AssembleWithTimestamp(nflow, tcp,
+			packet.Metadata().Timestamp)
+	}
+}
+
+// handle timer event
+func handleTimer(assembler *tcpassembly.Assembler) {
+	flushedFmt := "Timer: flushed %d, closed %d connections\n"
+
+	// flush connections without activity in the past minute
+	flushed, closed := assembler.FlushOlderThan(time.Now().Add(
+		-time.Minute))
+	if flushed > 0 {
+		fmt.Printf(flushedFmt, flushed, closed)
+	}
 }
 
 // listen on network interface and parse packets
@@ -880,26 +920,18 @@ func listen() {
 	fmt.Printf("Starting to listen on interface %s.\n", *pcapDevice)
 	packetSource := gopacket.NewPacketSource(pcapHandle,
 		pcapHandle.LinkType())
-	for packet := range packetSource.Packets() {
-		// only handle tcp packets (with valid network layer)
-		if packet.NetworkLayer() == nil ||
-			packet.TransportLayer() == nil ||
-			packet.TransportLayer().LayerType() !=
-				layers.LayerTypeTCP {
-			continue
-		}
-		tcp, ok := packet.TransportLayer().(*layers.TCP)
-		if !ok {
-			log.Fatal("Error parsing TCP packet")
-		}
+	packets := packetSource.Packets()
 
-		// if smc option is set, try to parse tcp stream
-		nflow := packet.NetworkLayer().NetworkFlow()
-		tflow := packet.TransportLayer().TransportFlow()
-		if checkSMCOption(tcp) || flows.get(nflow, tflow) {
-			flows.add(nflow, tflow)
-			assembler.AssembleWithTimestamp(nflow, tcp,
-				packet.Metadata().Timestamp)
+	// setup timer
+	ticker := time.Tick(time.Minute)
+
+	// handle packets and timer events
+	for {
+		select {
+		case packet := <-packets:
+			handlePacket(assembler, packet)
+		case <-ticker:
+			handleTimer(assembler)
 		}
 	}
 }
