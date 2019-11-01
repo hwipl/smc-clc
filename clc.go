@@ -548,70 +548,75 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 	proposal.hdr = hdr
 
 	// skip clc header
-	buf = buf[clcHeaderLen:]
+	skip := clcHeaderLen
 
 	// sender peer ID
-	copy(proposal.senderPeerID[:], buf[:peerIDLen])
-	buf = buf[peerIDLen:]
+	copy(proposal.senderPeerID[:], buf[skip:skip+peerIDLen])
+	skip += peerIDLen
 
 	// ib GID is an IPv6 address
 	proposal.ibGID = make(net.IP, 16)
-	copy(proposal.ibGID[:], buf[:16])
-	buf = buf[16:]
+	copy(proposal.ibGID[:], buf[skip:skip+16])
+	skip += 16
 
 	// ib MAC is a 6 byte MAC address
 	proposal.ibMAC = make(net.HardwareAddr, 6)
-	copy(proposal.ibMAC[:], buf[:6])
-	buf = buf[6:]
+	copy(proposal.ibMAC[:], buf[skip:skip+6])
+	skip += 6
 
 	// offset to ip area
-	proposal.ipAreaOffset = binary.BigEndian.Uint16(buf[:2])
-	buf = buf[2:]
+	proposal.ipAreaOffset = binary.BigEndian.Uint16(buf[skip : skip+2])
+	skip += 2
 
 	// Optional SMC-D info
 	if proposal.ipAreaOffset == 40 {
 		// smcd GID
-		proposal.smcdGID = binary.BigEndian.Uint64(buf[:8])
-		buf = buf[8:]
+		proposal.smcdGID = binary.BigEndian.Uint64(buf[skip : skip+8])
+		skip += 8
 
 		// reserved
-		copy(proposal.reserved[:], buf[:32])
-		buf = buf[32:]
+		copy(proposal.reserved[:], buf[skip:skip+32])
+		skip += 32
 	} else {
-		buf = buf[proposal.ipAreaOffset:]
+		skip += int(proposal.ipAreaOffset)
 	}
 
 	// IP/prefix is an IPv4 address
 	proposal.prefix = make(net.IP, 4)
-	copy(proposal.prefix[:], buf[:4])
-	buf = buf[4:]
+	copy(proposal.prefix[:], buf[skip:skip+4])
+	skip += 4
 
 	// prefix length
-	proposal.prefixLen = uint8(buf[0])
-	buf = buf[1:]
+	proposal.prefixLen = uint8(buf[skip])
+	skip++
 
 	// reserved
-	copy(proposal.reserved2[:], buf[:2])
-	buf = buf[2:]
+	copy(proposal.reserved2[:], buf[skip:skip+2])
+	skip += 2
 
 	// ipv6 prefix count
-	proposal.ipv6PrefixesCnt = uint8(buf[0])
+	proposal.ipv6PrefixesCnt = uint8(buf[skip])
 
 	// parse ipv6 prefixes
 	for i := uint8(0); i < proposal.ipv6PrefixesCnt; i++ {
 		// skip prefix count or last prefix length
-		buf = buf[1:]
+		skip++
 
+		// make sure we are still inside the clc message
+		if int(hdr.length)-skip < 17+4 {
+			log.Println("Error parsing CLC Proposal IPv6 prefixes")
+			break
+		}
 		// create new ipv6 prefix entry
 		ip6prefix := ipv6Prefix{}
 
 		// parse prefix and fill prefix entry
 		ip6prefix.prefix = make(net.IP, 16)
-		copy(ip6prefix.prefix[:], buf[:16])
-		buf = buf[16:]
+		copy(ip6prefix.prefix[:], buf[skip:skip+16])
+		skip += 16
 
 		// parse prefix length and fill prefix entry
-		ip6prefix.prefixLen = uint8(buf[0])
+		ip6prefix.prefixLen = uint8(buf[skip])
 
 		// add to ipv6 prefixes
 		proposal.ipv6Prefixes = append(proposal.ipv6Prefixes,
