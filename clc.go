@@ -592,6 +592,12 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 		skip += int(proposal.ipAreaOffset)
 	}
 
+	// make sure we do not read outside the message
+	if int(hdr.length)-skip < net.IPv4len+1+2+1+clcTrailerLen {
+		log.Println("Error parsing CLC Proposal IP Area Offset")
+		return nil
+	}
+
 	// IP/prefix is an IPv4 address
 	proposal.prefix = make(net.IP, net.IPv4len)
 	copy(proposal.prefix[:], buf[skip:skip+net.IPv4len])
