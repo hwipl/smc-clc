@@ -43,6 +43,11 @@ var (
 )
 
 const (
+	// maximum allowed CLC message size (for sanity checks)
+	clcMessageMaxSize = 1024
+	// CLC message buffer size for 2 CLC messages per flow/direction
+	clcMessageBufSize = clcMessageMaxSize * 2
+
 	// general
 	peerIDLen = 8
 	smcTypeR  = 0 /* SMC-R only */
@@ -849,6 +854,13 @@ func parseCLCHeader(buf []byte) *clcMessage {
 	// length
 	header.length = binary.BigEndian.Uint16(buf[5:7])
 
+	// check if message is not too big
+	if header.length > clcMessageMaxSize {
+		log.Println("Error parsing CLC header: message too big")
+		errDump(buf[:clcHeaderLen])
+		return nil
+	}
+
 	// 1 byte bitfield: version, flag, reserved, path
 	bitfield := buf[7]
 	header.version = (bitfield & 0b11110000) >> 4
@@ -898,7 +910,7 @@ func printCLC(s *smcStream, clc *clcMessage) {
 // parse smc stream
 func (s *smcStream) run() {
 	var clc *clcMessage
-	buf := make([]byte, 2048)
+	buf := make([]byte, clcMessageBufSize)
 	// get at least enough bytes for the CLC header
 	skip := clcHeaderLen
 	eof := false
