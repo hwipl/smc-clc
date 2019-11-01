@@ -555,9 +555,9 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 	skip += peerIDLen
 
 	// ib GID is an IPv6 address
-	proposal.ibGID = make(net.IP, 16)
-	copy(proposal.ibGID[:], buf[skip:skip+16])
-	skip += 16
+	proposal.ibGID = make(net.IP, net.IPv6len)
+	copy(proposal.ibGID[:], buf[skip:skip+net.IPv6len])
+	skip += net.IPv6len
 
 	// ib MAC is a 6 byte MAC address
 	proposal.ibMAC = make(net.HardwareAddr, 6)
@@ -582,9 +582,9 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 	}
 
 	// IP/prefix is an IPv4 address
-	proposal.prefix = make(net.IP, 4)
-	copy(proposal.prefix[:], buf[skip:skip+4])
-	skip += 4
+	proposal.prefix = make(net.IP, net.IPv4len)
+	copy(proposal.prefix[:], buf[skip:skip+net.IPv4len])
+	skip += net.IPv4len
 
 	// prefix length
 	proposal.prefixLen = uint8(buf[skip])
@@ -611,9 +611,9 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 		ip6prefix := ipv6Prefix{}
 
 		// parse prefix and fill prefix entry
-		ip6prefix.prefix = make(net.IP, 16)
-		copy(ip6prefix.prefix[:], buf[skip:skip+16])
-		skip += 16
+		ip6prefix.prefix = make(net.IP, net.IPv6len)
+		copy(ip6prefix.prefix[:], buf[skip:skip+net.IPv6len])
+		skip += net.IPv6len
 
 		// parse prefix length and fill prefix entry
 		ip6prefix.prefixLen = uint8(buf[skip])
@@ -639,9 +639,9 @@ func parseSMCRAcceptConfirm(
 	buf = buf[peerIDLen:]
 
 	// ib GID is an IPv6 Address
-	ac.ibGID = make(net.IP, 16)
-	copy(ac.ibGID[:], buf[:16])
-	buf = buf[16:]
+	ac.ibGID = make(net.IP, net.IPv6len)
+	copy(ac.ibGID[:], buf[:net.IPv6len])
+	buf = buf[net.IPv6len:]
 
 	// ib MAC is a 6 byte MAC address
 	ac.ibMAC = make(net.HardwareAddr, 6)
