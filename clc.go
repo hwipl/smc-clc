@@ -475,7 +475,7 @@ func (c *clcMessage) parse(buf []byte) {
 	// trailer
 	copy(c.trailer[:], buf[c.length-clcTrailerLen:])
 	if !hasEyecatcher(c.trailer[:]) {
-		log.Println("Invalid message trailer")
+		log.Println("Error parsing CLC message: invalid trailer")
 		errDump(buf[:c.length])
 		return
 	}
@@ -604,7 +604,8 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 
 	// make sure we do not read outside the message
 	if int(hdr.length)-skip < net.IPv4len+1+2+1+clcTrailerLen {
-		log.Println("Error parsing CLC Proposal IP Area Offset")
+		log.Println("Error parsing CLC Proposal: " +
+			"IP Area Offset too big")
 		errDump(buf[:hdr.length])
 		return nil
 	}
@@ -632,7 +633,8 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 
 		// make sure we are still inside the clc message
 		if int(hdr.length)-skip < clcIPv6PrefixLen+clcTrailerLen {
-			log.Println("Error parsing CLC Proposal IPv6 prefixes")
+			log.Println("Error parsing CLC Proposal: " +
+				"IPv6 prefix count too big")
 			errDump(buf[:hdr.length])
 			break
 		}
