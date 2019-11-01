@@ -48,8 +48,9 @@ const (
 	smcTypeB  = 3 /* SMC-R and SMC-D */
 
 	// header/message lengths
-	clcHeaderLen  = 8
-	clcDeclineLen = 28
+	clcHeaderLen   = 8
+	clcProposalLen = 52 // minimum length
+	clcDeclineLen  = 28
 
 	clcIPv6PrefixLen = 17
 	clcEyecatcherLen = 4
@@ -550,6 +551,12 @@ func hasEyecatcher(buf []byte) bool {
 func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 	proposal := clcProposalMsg{}
 	proposal.hdr = hdr
+
+	// check if message is long enough
+	if hdr.length < clcProposalLen {
+		log.Println("Error parsing CLC Proposal: message too short")
+		return nil
+	}
 
 	// skip clc header
 	skip := clcHeaderLen
