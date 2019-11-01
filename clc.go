@@ -51,6 +51,7 @@ const (
 	clcHeaderLen  = 8
 	clcDeclineLen = 28
 
+	clcIPv6PrefixLen = 17
 	clcEyecatcherLen = 4
 	clcTrailerLen    = clcEyecatcherLen
 
@@ -606,7 +607,7 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 		skip++
 
 		// make sure we are still inside the clc message
-		if int(hdr.length)-skip < 17+clcTrailerLen {
+		if int(hdr.length)-skip < clcIPv6PrefixLen+clcTrailerLen {
 			log.Println("Error parsing CLC Proposal IPv6 prefixes")
 			break
 		}
