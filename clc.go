@@ -48,9 +48,11 @@ const (
 	smcTypeB  = 3 /* SMC-R and SMC-D */
 
 	// header/message lengths
-	clcHeaderLen   = 8
-	clcProposalLen = 52 // minimum length
-	clcDeclineLen  = 28
+	clcHeaderLen            = 8
+	clcProposalLen          = 52 // minimum length
+	clcSMCRAcceptConfirmLen = 68
+	clcSMCDAcceptConfirmLen = 48
+	clcDeclineLen           = 28
 
 	clcIPv6PrefixLen = 17
 	clcEyecatcherLen = 4
@@ -648,6 +650,16 @@ func parseSMCRAcceptConfirm(
 	hdr *clcMessage, buf []byte) *clcSMCRAcceptConfirmMsg {
 	ac := clcSMCRAcceptConfirmMsg{}
 
+	// check if message is long enough
+	if hdr.length < clcSMCRAcceptConfirmLen {
+		err := "Error parsing CLC Accept: message too short"
+		if hdr.typ == clcConfirm {
+			err = "Error parsing CLC Confirm: message too short"
+		}
+		log.Println(err)
+		return nil
+	}
+
 	// skip clc header
 	buf = buf[clcHeaderLen:]
 
@@ -713,6 +725,16 @@ func parseSMCRAcceptConfirm(
 func parseSMCDAcceptConfirm(
 	hdr *clcMessage, buf []byte) *clcSMCDAcceptConfirmMsg {
 	ac := clcSMCDAcceptConfirmMsg{}
+
+	// check if message is long enough
+	if hdr.length < clcSMCDAcceptConfirmLen {
+		err := "Error parsing CLC Accept: message too short"
+		if hdr.typ == clcConfirm {
+			err = "Error parsing CLC Confirm: message too short"
+		}
+		log.Println(err)
+		return nil
+	}
 
 	// skip clc header
 	buf = buf[clcHeaderLen:]
