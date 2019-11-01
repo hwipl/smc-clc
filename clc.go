@@ -23,6 +23,7 @@ var (
 	// pcap variables
 	pcapDevice  = flag.String("i", "eth0", "the interface to listen on")
 	pcapPromisc = flag.Bool("promisc", true, "promiscuous mode")
+	pcapSnaplen = flag.Int("snaplen", 2048, "pcap snaplen")
 
 	// display variables
 	showReserved = flag.Bool("reserved", false,
@@ -1007,10 +1008,8 @@ func handleTimer(assembler *tcpassembly.Assembler) {
 
 // listen on network interface and parse packets
 func listen() {
-	pcapSnaplen := int32(1024)
-
 	// open device
-	pcapHandle, pcapErr := pcap.OpenLive(*pcapDevice, pcapSnaplen,
+	pcapHandle, pcapErr := pcap.OpenLive(*pcapDevice, int32(*pcapSnaplen),
 		*pcapPromisc, pcap.BlockForever)
 	if pcapErr != nil {
 		log.Fatal(pcapErr)
