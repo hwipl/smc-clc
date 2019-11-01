@@ -51,6 +51,9 @@ const (
 	clcHeaderLen  = 8
 	clcDeclineLen = 28
 
+	clcEyecatcherLen = 4
+	clcTrailerLen    = clcEyecatcherLen
+
 	// clc message types
 	clcProposal = 0x01
 	clcAccept   = 0x02
@@ -131,7 +134,7 @@ func (ft *flowTable) get(net, trans gopacket.Flow) bool {
 }
 
 // SMC eyecatcher
-type eyecatcher [4]byte
+type eyecatcher [clcEyecatcherLen]byte
 
 func (e eyecatcher) String() string {
 	if bytes.Compare(e[:], smcrEyecatcher) == 0 {
@@ -465,7 +468,7 @@ type clcMessage struct {
 // parse CLC message
 func (c *clcMessage) parse(buf []byte) {
 	// trailer
-	copy(c.trailer[:], buf[c.length-4:])
+	copy(c.trailer[:], buf[c.length-clcTrailerLen:])
 	if !hasEyecatcher(c.trailer[:]) {
 		log.Println("Invalid message trailer")
 		return
@@ -533,10 +536,10 @@ func (c *clcMessage) String() string {
 
 // check if there is a SMC-R or SMC-D eyecatcher in the buffer
 func hasEyecatcher(buf []byte) bool {
-	if bytes.Compare(buf[0:4], smcrEyecatcher) == 0 {
+	if bytes.Compare(buf[:clcEyecatcherLen], smcrEyecatcher) == 0 {
 		return true
 	}
-	if bytes.Compare(buf[0:4], smcdEyecatcher) == 0 {
+	if bytes.Compare(buf[:clcEyecatcherLen], smcdEyecatcher) == 0 {
 		return true
 	}
 	return false
@@ -603,7 +606,7 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 		skip++
 
 		// make sure we are still inside the clc message
-		if int(hdr.length)-skip < 17+4 {
+		if int(hdr.length)-skip < 17+clcTrailerLen {
 			log.Println("Error parsing CLC Proposal IPv6 prefixes")
 			break
 		}
@@ -780,7 +783,7 @@ func parseCLCHeader(buf []byte) *clcMessage {
 	}
 
 	// eyecatcher
-	copy(header.eyecatcher[:], buf[0:4])
+	copy(header.eyecatcher[:], buf[:clcEyecatcherLen])
 
 	// type
 	header.typ = buf[4]
