@@ -756,6 +756,12 @@ func parseCLCDecline(hdr *clcMessage, buf []byte) *clcDeclineMsg {
 	decline := clcDeclineMsg{}
 	decline.hdr = hdr
 
+	// check if message is long enough
+	if hdr.length < clcDeclineLen {
+		log.Println("Error parsing CLC Decline: message too short")
+		return nil
+	}
+
 	// skip clc header
 	buf = buf[clcHeaderLen:]
 
