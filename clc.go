@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
@@ -475,6 +476,7 @@ func (c *clcMessage) parse(buf []byte) {
 	copy(c.trailer[:], buf[c.length-clcTrailerLen:])
 	if !hasEyecatcher(c.trailer[:]) {
 		log.Println("Invalid message trailer")
+		errDump(buf[:c.length])
 		return
 	}
 
@@ -538,6 +540,11 @@ func (c *clcMessage) String() string {
 		flg, c.path, msg, c.trailer)
 }
 
+// dump buffer content in case of an error
+func errDump(buf []byte) {
+	log.Printf("Message Buffer Hex Dump:\n%s", hex.Dump(buf))
+}
+
 // check if there is a SMC-R or SMC-D eyecatcher in the buffer
 func hasEyecatcher(buf []byte) bool {
 	if bytes.Compare(buf[:clcEyecatcherLen], smcrEyecatcher) == 0 {
@@ -557,6 +564,7 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 	// check if message is long enough
 	if hdr.length < clcProposalLen {
 		log.Println("Error parsing CLC Proposal: message too short")
+		errDump(buf[:hdr.length])
 		return nil
 	}
 
@@ -597,6 +605,7 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 	// make sure we do not read outside the message
 	if int(hdr.length)-skip < net.IPv4len+1+2+1+clcTrailerLen {
 		log.Println("Error parsing CLC Proposal IP Area Offset")
+		errDump(buf[:hdr.length])
 		return nil
 	}
 
@@ -624,6 +633,7 @@ func parseCLCProposal(hdr *clcMessage, buf []byte) *clcProposalMsg {
 		// make sure we are still inside the clc message
 		if int(hdr.length)-skip < clcIPv6PrefixLen+clcTrailerLen {
 			log.Println("Error parsing CLC Proposal IPv6 prefixes")
+			errDump(buf[:hdr.length])
 			break
 		}
 		// create new ipv6 prefix entry
@@ -657,6 +667,7 @@ func parseSMCRAcceptConfirm(
 			err = "Error parsing CLC Confirm: message too short"
 		}
 		log.Println(err)
+		errDump(buf[:hdr.length])
 		return nil
 	}
 
@@ -733,6 +744,7 @@ func parseSMCDAcceptConfirm(
 			err = "Error parsing CLC Confirm: message too short"
 		}
 		log.Println(err)
+		errDump(buf[:hdr.length])
 		return nil
 	}
 
@@ -794,6 +806,7 @@ func parseCLCDecline(hdr *clcMessage, buf []byte) *clcDeclineMsg {
 	// check if message is long enough
 	if hdr.length < clcDeclineLen {
 		log.Println("Error parsing CLC Decline: message too short")
+		errDump(buf[:hdr.length])
 		return nil
 	}
 
