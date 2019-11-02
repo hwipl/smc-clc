@@ -29,6 +29,7 @@ var (
 	showReserved = flag.Bool("reserved", false,
 		"print reserved values in messages")
 	showTimestamps = flag.Bool("timestamps", true, "print timestamps")
+	showDumps      = flag.Bool("dumps", false, "print message hex dumps")
 
 	// flow table
 	flows flowTable
@@ -474,6 +475,9 @@ type clcMessage struct {
 
 	// trailer
 	trailer eyecatcher
+
+	// raw bytes buffer of the message
+	raw []byte
 }
 
 // parse CLC message
@@ -497,6 +501,9 @@ func (c *clcMessage) parse(buf []byte) {
 	case clcDecline:
 		c.decline = parseCLCDecline(c, buf)
 	}
+
+	// save buffer
+	c.raw = buf
 }
 
 // convert header fields to a string
@@ -544,6 +551,11 @@ func (c *clcMessage) String() string {
 		"%s, Path: %s, %s, Trailer: %s"
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length, c.version,
 		flg, c.path, msg, c.trailer)
+}
+
+// dump raw bytes buffer of the message
+func (c *clcMessage) dump() {
+	fmt.Printf("%s", hex.Dump(c.raw))
 }
 
 // dump buffer content in case of an error
@@ -905,6 +917,9 @@ func printCLC(s *smcStream, clc *clcMessage) {
 	}
 	fmt.Printf(clcFmt, t, s.net.Src(), s.transport.Src(), s.net.Dst(),
 		s.transport.Dst(), clc)
+	if *showDumps {
+		clc.dump()
+	}
 }
 
 // parse smc stream
@@ -933,7 +948,7 @@ func (s *smcStream) run() {
 		// parse and print current CLC message
 		if clc != nil {
 			// parse and print message
-			clc.parse(buf[skip-int(clc.length):])
+			clc.parse(buf[skip-int(clc.length) : skip])
 			printCLC(s, clc)
 
 			// wait for next handshake message
