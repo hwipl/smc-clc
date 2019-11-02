@@ -261,7 +261,7 @@ func (p *clcProposalMsg) String() string {
 	}
 
 	if *showReserved {
-		proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s " +
+		proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
 			"IP Area Offset: %d, SMC-D GID: %d, Reserved: %#x " +
 			"IPv4 Prefix: %s/%d, Reserved: %#x, " +
 			"IPv6 Prefix Count: %d%s"
@@ -270,7 +270,7 @@ func (p *clcProposalMsg) String() string {
 			p.prefix, p.prefixLen, p.reserved2, p.ipv6PrefixesCnt,
 			ipv6Prefixes)
 	}
-	proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s " +
+	proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
 		"IP Area Offset: %d, SMC-D GID: %d, " +
 		"IPv4 Prefix: %s/%d, IPv6 Prefix Count: %d%s"
 	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID, p.ibMAC,
