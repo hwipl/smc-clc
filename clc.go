@@ -542,15 +542,17 @@ func (c *clcMessage) String() string {
 
 	// construct string
 	if *showReserved {
-		headerFmt := "%s: Eyecatcher: %s, Length: %d, Version: %d, " +
-			"%s, Reserved: %#x, Path: %s, %s, Trailer: %s"
-		return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length,
-			c.version, flg, c.reserved, c.path, msg, c.trailer)
+		headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
+			"Version: %d, %s, Reserved: %#x, Path: %s, %s, " +
+			"Trailer: %s"
+		return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ,
+			c.length, c.version, flg, c.reserved, c.path, msg,
+			c.trailer)
 	}
-	headerFmt := "%s: Eyecatcher: %s, Length: %d, Version: %d, " +
-		"%s, Path: %s, %s, Trailer: %s"
-	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.length, c.version,
-		flg, c.path, msg, c.trailer)
+	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
+		"Version: %d, %s, Path: %s, %s, Trailer: %s"
+	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ, c.length,
+		c.version, flg, c.path, msg, c.trailer)
 }
 
 // dump raw bytes buffer of the message
