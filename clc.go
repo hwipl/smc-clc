@@ -9,6 +9,8 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -33,6 +35,13 @@ var (
 
 	// flow table
 	flows flowTable
+
+	// output, changed by http output
+	stdout     io.Writer = os.Stdout
+	stderr     io.Writer = os.Stderr
+	httpBuffer buffer
+	httpListen = flag.String("http", "",
+		"use http server set the listen address (e.g.: :8000)")
 )
 
 // smc definitions
@@ -96,6 +105,26 @@ const (
 	clcDeclineErrRdyLnk  = 0x09990002 /* ib ready link failed */
 	clcDeclineErrRegRMB  = 0x09990003 /* reg rmb failed */
 )
+
+// buffer is a bytes.Buffer protected by a mutex
+type buffer struct {
+	lock   sync.Mutex
+	buffer bytes.Buffer
+}
+
+// Read reads from the buffer into p
+func (b *buffer) Read(p []byte) (n int, err error) {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+	return b.buffer.Read(p)
+}
+
+// Write writes p to the buffer
+func (b *buffer) Write(p []byte) (n int, err error) {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+	return b.buffer.Write(p)
+}
 
 // flow table
 type flowTable struct {
@@ -557,7 +586,7 @@ func (c *clcMessage) String() string {
 
 // dump raw bytes buffer of the message
 func (c *clcMessage) dump() {
-	fmt.Printf("%s", hex.Dump(c.raw))
+	fmt.Fprintf(stdout, "%s", hex.Dump(c.raw))
 }
 
 // dump buffer content in case of an error
@@ -917,8 +946,8 @@ func printCLC(s *smcStream, clc *clcMessage) {
 	if *showTimestamps {
 		t = time.Now().Format("15:04:05.000000 ")
 	}
-	fmt.Printf(clcFmt, t, s.net.Src(), s.transport.Src(), s.net.Dst(),
-		s.transport.Dst(), clc)
+	fmt.Fprintf(stdout, clcFmt, t, s.net.Src(), s.transport.Src(),
+		s.net.Dst(), s.transport.Dst(), clc)
 	if *showDumps {
 		clc.dump()
 	}
@@ -1031,7 +1060,7 @@ func handleTimer(assembler *tcpassembly.Assembler) {
 	flushed, closed := assembler.FlushOlderThan(time.Now().Add(
 		-time.Minute))
 	if flushed > 0 {
-		fmt.Printf(flushedFmt, flushed, closed)
+		fmt.Fprintf(stdout, flushedFmt, flushed, closed)
 	}
 }
 
@@ -1054,7 +1083,8 @@ func listen() {
 	flows.init()
 
 	// Use the handle as a packet source to process all packets
-	fmt.Printf("Starting to listen on interface %s.\n", *pcapDevice)
+	fmt.Fprintf(stdout, "Starting to listen on interface %s.\n",
+		*pcapDevice)
 	packetSource := gopacket.NewPacketSource(pcapHandle,
 		pcapHandle.LinkType())
 	packets := packetSource.Packets()
@@ -1073,8 +1103,29 @@ func listen() {
 	}
 }
 
+// printHttp prints the httpBuffer to http clients
+func printHttp(w http.ResponseWriter, r *http.Request) {
+	if _, err := io.Copy(w, &httpBuffer); err != nil {
+		log.SetOutput(os.Stdout)
+		log.Fatal(err)
+	}
+}
+
+// setHttpOutput sets the standard output to http and starts a http server
+func setHttpOutput() {
+	stdout = &httpBuffer
+	stderr = &httpBuffer
+
+	http.HandleFunc("/", printHttp)
+	go http.ListenAndServe(*httpListen, nil)
+}
+
 // main
 func main() {
 	flag.Parse()
+	if *httpListen != "" {
+		setHttpOutput()
+	}
+	log.SetOutput(stderr)
 	listen()
 }
