@@ -1106,8 +1106,7 @@ func listen() {
 // printHttp prints the httpBuffer to http clients
 func printHttp(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, &httpBuffer); err != nil {
-		log.SetOutput(os.Stdout)
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, err)
 	}
 }
 
