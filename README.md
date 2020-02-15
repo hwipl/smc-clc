@@ -32,7 +32,7 @@ Options of the `smc-clc` command:
   -dumps
         print message hex dumps
   -http string
-        use http server set the listen address (e.g.: :8000)
+        use http server and set listen address (e.g.: :8000)
   -i string
         the interface to listen on (default "eth0")
   -promisc
