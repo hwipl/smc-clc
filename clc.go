@@ -471,6 +471,7 @@ func (d *clcDeclineMsg) String() string {
 	default:
 		diag = "Unknown"
 	}
+	diag = fmt.Sprintf("%#x (%s)", d.peerDiagnosis, diag)
 
 	if *showReserved {
 		declineFmt := "Peer ID: %s, Peer Diagnosis: %s, " +
