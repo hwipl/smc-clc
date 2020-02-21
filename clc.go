@@ -407,23 +407,12 @@ func (ac *clcAcceptConfirmMsg) String() string {
 	return "Unknown"
 }
 
-// CLC Decline Message
-type clcDeclineMsg struct {
-	hdr           *clcMessage
-	senderPeerID  peerID /* sender peer_id */
-	peerDiagnosis uint32 /* diagnosis information */
-	reserved      [4]byte
-}
+type peerDiagnosis uint32
 
-// convert CLC Decline Message to string
-func (d *clcDeclineMsg) String() string {
-	if d == nil {
-		return "n/a"
-	}
-
+func (p peerDiagnosis) String() string {
 	// parse peer diagnosis code
 	var diag string
-	switch d.peerDiagnosis {
+	switch p {
 	case clcDeclineMem:
 		diag = "insufficient memory resources"
 	case clcDeclineTimeoutCL:
@@ -471,16 +460,31 @@ func (d *clcDeclineMsg) String() string {
 	default:
 		diag = "Unknown"
 	}
-	diag = fmt.Sprintf("%#x (%s)", d.peerDiagnosis, diag)
+	return fmt.Sprintf("%#x (%s)", uint32(p), diag)
+}
+
+// CLC Decline Message
+type clcDeclineMsg struct {
+	hdr           *clcMessage
+	senderPeerID  peerID        /* sender peer_id */
+	peerDiagnosis peerDiagnosis /* diagnosis information */
+	reserved      [4]byte
+}
+
+// convert CLC Decline Message to string
+func (d *clcDeclineMsg) String() string {
+	if d == nil {
+		return "n/a"
+	}
 
 	if *showReserved {
 		declineFmt := "Peer ID: %s, Peer Diagnosis: %s, " +
 			"Reserved: %#x"
-		return fmt.Sprintf(declineFmt, d.senderPeerID, diag,
+		return fmt.Sprintf(declineFmt, d.senderPeerID, d.peerDiagnosis,
 			d.reserved)
 	}
 	declineFmt := "Peer ID: %s, Peer Diagnosis: %s"
-	return fmt.Sprintf(declineFmt, d.senderPeerID, diag)
+	return fmt.Sprintf(declineFmt, d.senderPeerID, d.peerDiagnosis)
 }
 
 // CLC message
@@ -873,7 +877,7 @@ func parseCLCDecline(hdr *clcMessage, buf []byte) *clcDeclineMsg {
 	buf = buf[peerIDLen:]
 
 	// peer diagnosis
-	decline.peerDiagnosis = binary.BigEndian.Uint32(buf[:4])
+	decline.peerDiagnosis = peerDiagnosis(binary.BigEndian.Uint32(buf[:4]))
 	buf = buf[4:]
 
 	// reserved
