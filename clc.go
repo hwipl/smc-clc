@@ -293,22 +293,33 @@ func (p *clcProposalMsg) String() string {
 		ipv6Prefixes += fmt.Sprintf(", IPv6 Prefix: %s", prefix)
 	}
 
-	if *showReserved {
-		proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
-			"IP Area Offset: %d, SMC-D GID: %d, Reserved: %#x " +
-			"IPv4 Prefix: %s/%d, Reserved: %#x, " +
-			"IPv6 Prefix Count: %d%s"
-		return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID,
-			p.ibMAC, p.ipAreaOffset, p.smcdGID, p.reserved,
-			p.prefix, p.prefixLen, p.reserved2, p.ipv6PrefixesCnt,
-			ipv6Prefixes)
-	}
 	proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
 		"IP Area Offset: %d, SMC-D GID: %d, " +
 		"IPv4 Prefix: %s/%d, IPv6 Prefix Count: %d%s"
 	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID, p.ibMAC,
 		p.ipAreaOffset, p.smcdGID, p.prefix, p.prefixLen,
 		p.ipv6PrefixesCnt, ipv6Prefixes)
+}
+
+func (p *clcProposalMsg) Reserved() string {
+	if p == nil {
+		return "n/a"
+	}
+
+	// ipv6 prefixes
+	ipv6Prefixes := ""
+	for _, prefix := range p.ipv6Prefixes {
+		ipv6Prefixes += fmt.Sprintf(", IPv6 Prefix: %s", prefix)
+	}
+
+	proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
+		"IP Area Offset: %d, SMC-D GID: %d, Reserved: %#x " +
+		"IPv4 Prefix: %s/%d, Reserved: %#x, " +
+		"IPv6 Prefix Count: %d%s"
+	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID,
+		p.ibMAC, p.ipAreaOffset, p.smcdGID, p.reserved,
+		p.prefix, p.prefixLen, p.reserved2, p.ipv6PrefixesCnt,
+		ipv6Prefixes)
 }
 
 // CLC SMC-R Accept/Confirm Message
@@ -334,17 +345,6 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 		return "n/a"
 	}
 
-	if *showReserved {
-		acFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
-			"QP Number: %d, RMB RKey: %d, RMBE Index: %d, " +
-			"RMBE Alert Token: %d, RMBE Size: %s, QP MTU: %s, " +
-			"Reserved: %#x, RMB Virtual Address: %#x, " +
-			"Reserved: %#x, Packet Sequence Number: %d"
-		return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC,
-			ac.qpn, ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken,
-			ac.rmbeSize, ac.qpMtu, ac.reserved, ac.rmbDmaAddr,
-			ac.reserved2, ac.psn)
-	}
 	acFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
 		"QP Number: %d, RMB RKey: %d, RMBE Index: %d, " +
 		"RMBE Alert Token: %d, RMBE Size: %s, QP MTU: %s, " +
@@ -352,6 +352,22 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC, ac.qpn,
 		ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken, ac.rmbeSize,
 		ac.qpMtu, ac.rmbDmaAddr, ac.psn)
+}
+
+func (ac *clcSMCRAcceptConfirmMsg) Reserved() string {
+	if ac == nil {
+		return "n/a"
+	}
+
+	acFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
+		"QP Number: %d, RMB RKey: %d, RMBE Index: %d, " +
+		"RMBE Alert Token: %d, RMBE Size: %s, QP MTU: %s, " +
+		"Reserved: %#x, RMB Virtual Address: %#x, " +
+		"Reserved: %#x, Packet Sequence Number: %d"
+	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC,
+		ac.qpn, ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken,
+		ac.rmbeSize, ac.qpMtu, ac.reserved, ac.rmbDmaAddr,
+		ac.reserved2, ac.psn)
 }
 
 // CLC SMC-D Accept/Confirm Message
@@ -372,18 +388,23 @@ func (ac *clcSMCDAcceptConfirmMsg) String() string {
 		return "n/a"
 	}
 
-	if *showReserved {
-		acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
-			"DMBE Size %s, Reserved: %#x, Reserved: %#x, " +
-			"Link ID: %d, Reserved: %#x"
-		return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
-			ac.dmbeSize, ac.reserved, ac.reserved2, ac.linkid,
-			ac.reserved3)
-	}
 	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
 		"DMBE Size %s, Link ID: %d"
 	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
 		ac.dmbeSize, ac.linkid)
+}
+
+func (ac *clcSMCDAcceptConfirmMsg) Reserved() string {
+	if ac == nil {
+		return "n/a"
+	}
+
+	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
+		"DMBE Size %s, Reserved: %#x, Reserved: %#x, " +
+		"Link ID: %d, Reserved: %#x"
+	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
+		ac.dmbeSize, ac.reserved, ac.reserved2, ac.linkid,
+		ac.reserved3)
 }
 
 // CLC Accept/Confirm Message
@@ -403,6 +424,19 @@ func (ac *clcAcceptConfirmMsg) String() string {
 	}
 	if ac.smcd != nil {
 		return ac.smcd.String()
+	}
+	return "Unknown"
+}
+
+func (ac *clcAcceptConfirmMsg) Reserved() string {
+	if ac == nil {
+		return "n/a"
+	}
+	if ac.smcr != nil {
+		return ac.smcr.Reserved()
+	}
+	if ac.smcd != nil {
+		return ac.smcd.Reserved()
 	}
 	return "Unknown"
 }
@@ -477,14 +511,18 @@ func (d *clcDeclineMsg) String() string {
 		return "n/a"
 	}
 
-	if *showReserved {
-		declineFmt := "Peer ID: %s, Peer Diagnosis: %s, " +
-			"Reserved: %#x"
-		return fmt.Sprintf(declineFmt, d.senderPeerID, d.peerDiagnosis,
-			d.reserved)
-	}
 	declineFmt := "Peer ID: %s, Peer Diagnosis: %s"
 	return fmt.Sprintf(declineFmt, d.senderPeerID, d.peerDiagnosis)
+}
+
+func (d *clcDeclineMsg) Reserved() string {
+	if d == nil {
+		return "n/a"
+	}
+
+	declineFmt := "Peer ID: %s, Peer Diagnosis: %s, Reserved: %#x"
+	return fmt.Sprintf(declineFmt, d.senderPeerID, d.peerDiagnosis,
+		d.reserved)
 }
 
 // CLC message
@@ -578,18 +616,52 @@ func (c *clcMessage) String() string {
 	}
 
 	// construct string
-	if *showReserved {
-		headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
-			"Version: %d, %s, Reserved: %#x, Path: %s, %s, " +
-			"Trailer: %s"
-		return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ,
-			c.length, c.version, flg, c.reserved, c.path, msg,
-			c.trailer)
-	}
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
 		"Version: %d, %s, Path: %s, %s, Trailer: %s"
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ, c.length,
 		c.version, flg, c.path, msg, c.trailer)
+}
+
+func (c *clcMessage) Reserved() string {
+	var typ string
+	var msg string
+	var flg string
+
+	if c == nil {
+		return "n/a"
+	}
+
+	// message type
+	switch c.typ {
+	case clcProposal:
+		typ = "Proposal"
+		msg = c.proposal.Reserved()
+		flg = fmt.Sprintf("Flag: %d", c.flag)
+	case clcAccept:
+		typ = "Accept"
+		msg = c.accept.Reserved()
+		flg = fmt.Sprintf("First Contact: %d", c.flag)
+	case clcConfirm:
+		typ = "Confirm"
+		msg = c.confirm.Reserved()
+		flg = fmt.Sprintf("Flag: %d", c.flag)
+	case clcDecline:
+		typ = "Decline"
+		msg = c.decline.Reserved()
+		flg = fmt.Sprintf("Out of Sync: %d", c.flag)
+	default:
+		typ = "Unknown"
+		msg = "n/a"
+		flg = fmt.Sprintf("Flag: %d", c.flag)
+	}
+
+	// construct string
+	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
+		"Version: %d, %s, Reserved: %#x, Path: %s, %s, " +
+		"Trailer: %s"
+	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ,
+		c.length, c.version, flg, c.reserved, c.path, msg,
+		c.trailer)
 }
 
 // dump raw bytes buffer of the message
@@ -954,8 +1026,13 @@ func printCLC(s *smcStream, clc *clcMessage) {
 	if *showTimestamps {
 		t = time.Now().Format("15:04:05.000000 ")
 	}
-	fmt.Fprintf(stdout, clcFmt, t, s.net.Src(), s.transport.Src(),
-		s.net.Dst(), s.transport.Dst(), clc)
+	if *showReserved {
+		fmt.Fprintf(stdout, clcFmt, t, s.net.Src(), s.transport.Src(),
+			s.net.Dst(), s.transport.Dst(), clc.Reserved())
+	} else {
+		fmt.Fprintf(stdout, clcFmt, t, s.net.Src(), s.transport.Src(),
+			s.net.Dst(), s.transport.Dst(), clc)
+	}
 	if *showDumps {
 		clc.dump()
 	}
