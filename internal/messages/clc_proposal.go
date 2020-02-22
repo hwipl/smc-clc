@@ -74,7 +74,7 @@ func (p *clcProposalMsg) Reserved() string {
 	}
 
 	proposalFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
-		"IP Area Offset: %d, SMC-D GID: %d, Reserved: %#x " +
+		"IP Area Offset: %d, SMC-D GID: %d, Reserved: %#x, " +
 		"IPv4 Prefix: %s/%d, Reserved: %#x, " +
 		"IPv6 Prefix Count: %d%s"
 	return fmt.Sprintf(proposalFmt, p.senderPeerID, p.ibGID,
