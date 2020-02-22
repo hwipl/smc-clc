@@ -664,9 +664,9 @@ func (c *clcMessage) Reserved() string {
 		c.trailer)
 }
 
-// dump raw bytes buffer of the message
-func (c *clcMessage) dump() {
-	fmt.Fprintf(stdout, "%s", hex.Dump(c.raw))
+// Dump returns the raw bytes buffer of the message as hex dump string
+func (c *clcMessage) Dump() string {
+	return hex.Dump(c.raw)
 }
 
 // dump buffer content in case of an error
@@ -1034,7 +1034,7 @@ func printCLC(s *smcStream, clc *clcMessage) {
 			s.net.Dst(), s.transport.Dst(), clc)
 	}
 	if *showDumps {
-		clc.dump()
+		fmt.Fprintf(stdout, "%s", clc.Dump())
 	}
 }
 
