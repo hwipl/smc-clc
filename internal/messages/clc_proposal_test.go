@@ -8,18 +8,18 @@ import (
 
 func TestParseCLCProposalSMCRIPv4(t *testing.T) {
 	// prepare smc-r ipv4 proposal message
-	ipv4_proposal := "e2d4c3d901003410b1a098039babcdef" +
+	ipv4Proposal := "e2d4c3d901003410b1a098039babcdef" +
 		"fe800000000000009a039bfffeabcdef" +
 		"98039babcdef00007f00000008000000" +
 		"e2d4c3d9"
-	msg, err := hex.DecodeString(ipv4_proposal)
+	msg, err := hex.DecodeString(ipv4Proposal)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// parse message
-	clc_hdr := ParseCLCHeader(msg)
-	proposal := parseCLCProposal(clc_hdr, msg)
+	clcHdr := ParseCLCHeader(msg)
+	proposal := parseCLCProposal(clcHdr, msg)
 
 	// check output message without reserved fields
 	want := "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
@@ -47,19 +47,19 @@ func TestParseCLCProposalSMCRIPv4(t *testing.T) {
 
 func TestParseCLCProposalSMCRIPv6(t *testing.T) {
 	// prepare smc-r ipv6 proposal message
-	ipv6_proposal := "e2d4c3d901004510394498039babcdef" +
+	ipv6Proposal := "e2d4c3d901004510394498039babcdef" +
 		"fe800000000000009a039bfffeabcdef" +
 		"98039babcdef00000000000000000001" +
 		"00000000000000000000000000000001" +
 		"80e2d4c3d9"
-	msg, err := hex.DecodeString(ipv6_proposal)
+	msg, err := hex.DecodeString(ipv6Proposal)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// parse message
-	clc_hdr := ParseCLCHeader(msg)
-	proposal := parseCLCProposal(clc_hdr, msg)
+	clcHdr := ParseCLCHeader(msg)
+	proposal := parseCLCProposal(clcHdr, msg)
 
 	// check output message without reserved fields
 	want := "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
