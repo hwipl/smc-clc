@@ -75,6 +75,41 @@ func TestParseCLCHeaderAccept(t *testing.T) {
 	}
 }
 
+func TestParseCLCHeaderConfirm(t *testing.T) {
+	// prepare message
+	msg_bytes := "e2d4c3d903004410b1a098039babcdef" +
+		"fe800000000000009a039bfffeabcdef" +
+		"98039babcdef0000e50000187f010000" +
+		"0006230000000000f0a40000000d89a4" +
+		"e2d4c3d9"
+	msg, err := hex.DecodeString(msg_bytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// parse message
+	clc := ParseCLCHeader(msg)
+	clc.Parse(msg)
+
+	// check output message without reserved fields
+	want := "Confirm: Eyecatcher: SMC-R, Type: 3 (Confirm), " +
+		"Length: 68, Version: 1, Flag: 0, Path: SMC-R, " +
+		clc.confirm.String() + ", Trailer: SMC-R"
+	got := clc.String()
+	if got != want {
+		t.Errorf("clc.String() = %s; want %s", got, want)
+	}
+
+	// check output message with reserved fields
+	want = "Confirm: Eyecatcher: SMC-R, Type: 3 (Confirm), " +
+		"Length: 68, Version: 1, Flag: 0, Reserved: 0x0, " +
+		"Path: SMC-R, " + clc.confirm.Reserved() + ", Trailer: SMC-R"
+	got = clc.Reserved()
+	if got != want {
+		t.Errorf("clc.Reserved() = %s; want %s", got, want)
+	}
+}
+
 func TestParseCLCHeaderDecline(t *testing.T) {
 	// prepare message
 	msg_bytes := "e2d4c3d904001c102525252525252500" +
