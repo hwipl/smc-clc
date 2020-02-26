@@ -24,7 +24,7 @@ func TestParseCLCHeaderProposal(t *testing.T) {
 	// check output message without reserved fields
 	want := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
 		"Length: 52, Version: 1, Flag: 0, Path: SMC-R, " +
-		clc.proposal.String() + ", Trailer: SMC-R"
+		clc.message.String() + ", Trailer: SMC-R"
 	got := clc.String()
 	if got != want {
 		t.Errorf("clc.String() = %s; want %s", got, want)
@@ -33,7 +33,7 @@ func TestParseCLCHeaderProposal(t *testing.T) {
 	// check output message with reserved fields
 	want = "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
 		"Length: 52, Version: 1, Flag: 0, Reserved: 0x0, " +
-		"Path: SMC-R, " + clc.proposal.Reserved() + ", Trailer: SMC-R"
+		"Path: SMC-R, " + clc.message.Reserved() + ", Trailer: SMC-R"
 	got = clc.Reserved()
 	if got != want {
 		t.Errorf("clc.Reserved() = %s; want %s", got, want)
@@ -59,7 +59,7 @@ func TestParseCLCHeaderAccept(t *testing.T) {
 	// check output message without reserved fields
 	want := "Accept: Eyecatcher: SMC-R, Type: 2 (Accept), " +
 		"Length: 68, Version: 1, First Contact: 1, Path: SMC-R, " +
-		clc.accept.String() + ", Trailer: SMC-R"
+		clc.message.String() + ", Trailer: SMC-R"
 	got := clc.String()
 	if got != want {
 		t.Errorf("clc.String() = %s; want %s", got, want)
@@ -68,7 +68,7 @@ func TestParseCLCHeaderAccept(t *testing.T) {
 	// check output message with reserved fields
 	want = "Accept: Eyecatcher: SMC-R, Type: 2 (Accept), " +
 		"Length: 68, Version: 1, First Contact: 1, Reserved: 0x0, " +
-		"Path: SMC-R, " + clc.accept.Reserved() + ", Trailer: SMC-R"
+		"Path: SMC-R, " + clc.message.Reserved() + ", Trailer: SMC-R"
 	got = clc.Reserved()
 	if got != want {
 		t.Errorf("clc.Reserved() = %s; want %s", got, want)
@@ -94,7 +94,7 @@ func TestParseCLCHeaderConfirm(t *testing.T) {
 	// check output message without reserved fields
 	want := "Confirm: Eyecatcher: SMC-R, Type: 3 (Confirm), " +
 		"Length: 68, Version: 1, Flag: 0, Path: SMC-R, " +
-		clc.confirm.String() + ", Trailer: SMC-R"
+		clc.message.String() + ", Trailer: SMC-R"
 	got := clc.String()
 	if got != want {
 		t.Errorf("clc.String() = %s; want %s", got, want)
@@ -103,7 +103,7 @@ func TestParseCLCHeaderConfirm(t *testing.T) {
 	// check output message with reserved fields
 	want = "Confirm: Eyecatcher: SMC-R, Type: 3 (Confirm), " +
 		"Length: 68, Version: 1, Flag: 0, Reserved: 0x0, " +
-		"Path: SMC-R, " + clc.confirm.Reserved() + ", Trailer: SMC-R"
+		"Path: SMC-R, " + clc.message.Reserved() + ", Trailer: SMC-R"
 	got = clc.Reserved()
 	if got != want {
 		t.Errorf("clc.Reserved() = %s; want %s", got, want)
@@ -126,7 +126,7 @@ func TestParseCLCHeaderDecline(t *testing.T) {
 	// check output message without reserved fields
 	want := "Decline: Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
 		"Version: 1, Out of Sync: 0, Path: SMC-R, " +
-		clc.decline.String() + ", Trailer: SMC-R"
+		clc.message.String() + ", Trailer: SMC-R"
 	got := clc.String()
 	if got != want {
 		t.Errorf("clc.String() = %s; want %s", got, want)
@@ -135,7 +135,7 @@ func TestParseCLCHeaderDecline(t *testing.T) {
 	// check output message with reserved fields
 	want = "Decline: Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
 		"Version: 1, Out of Sync: 0, Reserved: 0x0, Path: SMC-R, " +
-		clc.decline.Reserved() + ", Trailer: SMC-R"
+		clc.message.Reserved() + ", Trailer: SMC-R"
 	got = clc.Reserved()
 	if got != want {
 		t.Errorf("clc.Reserved() = %s; want %s", got, want)

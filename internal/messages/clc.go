@@ -30,6 +30,11 @@ const (
 	clcDecline  = 0x04
 )
 
+type message interface {
+	String() string
+	Reserved() string
+}
+
 // SMC path
 type path uint8
 
@@ -73,10 +78,7 @@ type CLCMessage struct {
 	path     path  // (2 bits)
 
 	// type depenent message content
-	proposal *clcProposalMsg
-	accept   *clcAcceptConfirmMsg
-	confirm  *clcAcceptConfirmMsg
-	decline  *clcDeclineMsg
+	message message
 
 	// trailer
 	trailer eyecatcher
@@ -98,13 +100,13 @@ func (c *CLCMessage) Parse(buf []byte) {
 	// parse type dependent message content
 	switch c.typ {
 	case clcProposal:
-		c.proposal = parseCLCProposal(c, buf)
+		c.message = parseCLCProposal(c, buf)
 	case clcAccept:
-		c.accept = parseCLCAcceptConfirm(c, buf)
+		c.message = parseCLCAcceptConfirm(c, buf)
 	case clcConfirm:
-		c.confirm = parseCLCAcceptConfirm(c, buf)
+		c.message = parseCLCAcceptConfirm(c, buf)
 	case clcDecline:
-		c.decline = parseCLCDecline(c, buf)
+		c.message = parseCLCDecline(c, buf)
 	}
 
 	// save buffer
@@ -145,29 +147,18 @@ func (c *CLCMessage) flagString() string {
 
 // convert header fields to a string
 func (c *CLCMessage) String() string {
-	var msg string
-
 	if c == nil {
 		return "n/a"
-	}
-
-	// message type
-	switch c.typ {
-	case clcProposal:
-		msg = c.proposal.String()
-	case clcAccept:
-		msg = c.accept.String()
-	case clcConfirm:
-		msg = c.confirm.String()
-	case clcDecline:
-		msg = c.decline.String()
-	default:
-		msg = "n/a"
 	}
 
 	// construct string
 	typ := c.typeString()
 	flg := c.flagString()
+	msg := "n/a"
+	if c.message != nil {
+		msg = c.message.String()
+	}
+
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
 		"Version: %d, %s, Path: %s, %s, Trailer: %s"
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ, c.Length,
@@ -175,29 +166,17 @@ func (c *CLCMessage) String() string {
 }
 
 func (c *CLCMessage) Reserved() string {
-	var msg string
-
 	if c == nil {
 		return "n/a"
-	}
-
-	// message type
-	switch c.typ {
-	case clcProposal:
-		msg = c.proposal.Reserved()
-	case clcAccept:
-		msg = c.accept.Reserved()
-	case clcConfirm:
-		msg = c.confirm.Reserved()
-	case clcDecline:
-		msg = c.decline.Reserved()
-	default:
-		msg = "n/a"
 	}
 
 	// construct string
 	typ := c.typeString()
 	flg := c.flagString()
+	msg := "n/a"
+	if c.message != nil {
+		msg = c.message.Reserved()
+	}
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
 		"Version: %d, %s, Reserved: %#x, Path: %s, %s, " +
 		"Trailer: %s"
