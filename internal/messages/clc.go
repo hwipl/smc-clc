@@ -111,11 +111,26 @@ func (c *CLCMessage) Parse(buf []byte) {
 	c.raw = buf
 }
 
+// flagString() converts the flag bit in the message according the message type
+func (c *CLCMessage) flagString() string {
+	switch c.typ {
+	case clcProposal:
+		return fmt.Sprintf("Flag: %d", c.flag)
+	case clcAccept:
+		return fmt.Sprintf("First Contact: %d", c.flag)
+	case clcConfirm:
+		return fmt.Sprintf("Flag: %d", c.flag)
+	case clcDecline:
+		return fmt.Sprintf("Out of Sync: %d", c.flag)
+	default:
+		return fmt.Sprintf("Flag: %d", c.flag)
+	}
+}
+
 // convert header fields to a string
 func (c *CLCMessage) String() string {
 	var typ string
 	var msg string
-	var flg string
 
 	if c == nil {
 		return "n/a"
@@ -126,26 +141,22 @@ func (c *CLCMessage) String() string {
 	case clcProposal:
 		typ = "Proposal"
 		msg = c.proposal.String()
-		flg = fmt.Sprintf("Flag: %d", c.flag)
 	case clcAccept:
 		typ = "Accept"
 		msg = c.accept.String()
-		flg = fmt.Sprintf("First Contact: %d", c.flag)
 	case clcConfirm:
 		typ = "Confirm"
 		msg = c.confirm.String()
-		flg = fmt.Sprintf("Flag: %d", c.flag)
 	case clcDecline:
 		typ = "Decline"
 		msg = c.decline.String()
-		flg = fmt.Sprintf("Out of Sync: %d", c.flag)
 	default:
 		typ = "Unknown"
 		msg = "n/a"
-		flg = fmt.Sprintf("Flag: %d", c.flag)
 	}
 
 	// construct string
+	flg := c.flagString()
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
 		"Version: %d, %s, Path: %s, %s, Trailer: %s"
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ, c.Length,
@@ -155,7 +166,6 @@ func (c *CLCMessage) String() string {
 func (c *CLCMessage) Reserved() string {
 	var typ string
 	var msg string
-	var flg string
 
 	if c == nil {
 		return "n/a"
@@ -166,26 +176,22 @@ func (c *CLCMessage) Reserved() string {
 	case clcProposal:
 		typ = "Proposal"
 		msg = c.proposal.Reserved()
-		flg = fmt.Sprintf("Flag: %d", c.flag)
 	case clcAccept:
 		typ = "Accept"
 		msg = c.accept.Reserved()
-		flg = fmt.Sprintf("First Contact: %d", c.flag)
 	case clcConfirm:
 		typ = "Confirm"
 		msg = c.confirm.Reserved()
-		flg = fmt.Sprintf("Flag: %d", c.flag)
 	case clcDecline:
 		typ = "Decline"
 		msg = c.decline.Reserved()
-		flg = fmt.Sprintf("Out of Sync: %d", c.flag)
 	default:
 		typ = "Unknown"
 		msg = "n/a"
-		flg = fmt.Sprintf("Flag: %d", c.flag)
 	}
 
 	// construct string
+	flg := c.flagString()
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
 		"Version: %d, %s, Reserved: %#x, Path: %s, %s, " +
 		"Trailer: %s"
