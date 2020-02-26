@@ -111,6 +111,22 @@ func (c *CLCMessage) Parse(buf []byte) {
 	c.raw = buf
 }
 
+// typeString() converts the message type to a string
+func (c *CLCMessage) typeString() string {
+	switch c.typ {
+	case clcProposal:
+		return "Proposal"
+	case clcAccept:
+		return "Accept"
+	case clcConfirm:
+		return "Confirm"
+	case clcDecline:
+		return "Decline"
+	default:
+		return "Unknown"
+	}
+}
+
 // flagString() converts the flag bit in the message according the message type
 func (c *CLCMessage) flagString() string {
 	switch c.typ {
@@ -129,7 +145,6 @@ func (c *CLCMessage) flagString() string {
 
 // convert header fields to a string
 func (c *CLCMessage) String() string {
-	var typ string
 	var msg string
 
 	if c == nil {
@@ -139,23 +154,19 @@ func (c *CLCMessage) String() string {
 	// message type
 	switch c.typ {
 	case clcProposal:
-		typ = "Proposal"
 		msg = c.proposal.String()
 	case clcAccept:
-		typ = "Accept"
 		msg = c.accept.String()
 	case clcConfirm:
-		typ = "Confirm"
 		msg = c.confirm.String()
 	case clcDecline:
-		typ = "Decline"
 		msg = c.decline.String()
 	default:
-		typ = "Unknown"
 		msg = "n/a"
 	}
 
 	// construct string
+	typ := c.typeString()
 	flg := c.flagString()
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
 		"Version: %d, %s, Path: %s, %s, Trailer: %s"
@@ -164,7 +175,6 @@ func (c *CLCMessage) String() string {
 }
 
 func (c *CLCMessage) Reserved() string {
-	var typ string
 	var msg string
 
 	if c == nil {
@@ -174,23 +184,19 @@ func (c *CLCMessage) Reserved() string {
 	// message type
 	switch c.typ {
 	case clcProposal:
-		typ = "Proposal"
 		msg = c.proposal.Reserved()
 	case clcAccept:
-		typ = "Accept"
 		msg = c.accept.Reserved()
 	case clcConfirm:
-		typ = "Confirm"
 		msg = c.confirm.Reserved()
 	case clcDecline:
-		typ = "Decline"
 		msg = c.decline.Reserved()
 	default:
-		typ = "Unknown"
 		msg = "n/a"
 	}
 
 	// construct string
+	typ := c.typeString()
 	flg := c.flagString()
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
 		"Version: %d, %s, Reserved: %#x, Path: %s, %s, " +
