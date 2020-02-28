@@ -8,11 +8,11 @@ import (
 
 func TestParseCLCHeaderProposal(t *testing.T) {
 	// prepare message
-	msg_bytes := "e2d4c3d901003410b1a098039babcdef" +
+	msgBytes := "e2d4c3d901003410b1a098039babcdef" +
 		"fe800000000000009a039bfffeabcdef" +
 		"98039babcdef00007f00000008000000" +
 		"e2d4c3d9"
-	msg, err := hex.DecodeString(msg_bytes)
+	msg, err := hex.DecodeString(msgBytes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,12 +42,12 @@ func TestParseCLCHeaderProposal(t *testing.T) {
 
 func TestParseCLCHeaderAccept(t *testing.T) {
 	// prepare message
-	msg_bytes := "e2d4c3d902004418b1a098039babcdef" +
+	msgBytes := "e2d4c3d902004418b1a098039babcdef" +
 		"fe800000000000009a039bfffeabcdef" +
 		"98039babcdef0000e40000157d010000" +
 		"0005230000000000f0a600000072f5fe" +
 		"e2d4c3d9"
-	msg, err := hex.DecodeString(msg_bytes)
+	msg, err := hex.DecodeString(msgBytes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,12 +77,12 @@ func TestParseCLCHeaderAccept(t *testing.T) {
 
 func TestParseCLCHeaderConfirm(t *testing.T) {
 	// prepare message
-	msg_bytes := "e2d4c3d903004410b1a098039babcdef" +
+	msgBytes := "e2d4c3d903004410b1a098039babcdef" +
 		"fe800000000000009a039bfffeabcdef" +
 		"98039babcdef0000e50000187f010000" +
 		"0006230000000000f0a40000000d89a4" +
 		"e2d4c3d9"
-	msg, err := hex.DecodeString(msg_bytes)
+	msg, err := hex.DecodeString(msgBytes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,9 +112,9 @@ func TestParseCLCHeaderConfirm(t *testing.T) {
 
 func TestParseCLCHeaderDecline(t *testing.T) {
 	// prepare message
-	msg_bytes := "e2d4c3d904001c102525252525252500" +
+	msgBytes := "e2d4c3d904001c102525252525252500" +
 		"0303000000000000e2d4c3d9"
-	msg, err := hex.DecodeString(msg_bytes)
+	msg, err := hex.DecodeString(msgBytes)
 	if err != nil {
 		log.Fatal(err)
 	}

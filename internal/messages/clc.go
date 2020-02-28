@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	// maximum allowed CLC message size (for sanity checks)
+	// CLCMessageMaxSize is the maximum allowed CLC message size in bytes
+	// (for sanity checks)
 	CLCMessageMaxSize = 1024
 
 	// smc type/path
@@ -17,7 +18,7 @@ const (
 	smcTypeD = 1 /* SMC-D only */
 	smcTypeB = 3 /* SMC-R and SMC-D */
 
-	// clc header
+	// CLCHeaderLen is the length of the clc header in bytes
 	CLCHeaderLen = 8
 
 	// peer ID
@@ -60,7 +61,7 @@ func (p peerID) String() string {
 	return fmt.Sprintf("%d@%s", instance, roceMAC)
 }
 
-// CLC message
+// CLCMessage stores a clc message
 type CLCMessage struct {
 	// eyecatcher
 	eyecatcher eyecatcher
@@ -87,7 +88,7 @@ type CLCMessage struct {
 	raw []byte
 }
 
-// parse CLC message
+// Parse parses the CLC message in buf
 func (c *CLCMessage) Parse(buf []byte) {
 	// trailer
 	copy(c.trailer[:], buf[c.Length-clcTrailerLen:])
@@ -145,7 +146,7 @@ func (c *CLCMessage) flagString() string {
 	}
 }
 
-// convert header fields to a string
+// String converts the clc header fields to a string
 func (c *CLCMessage) String() string {
 	if c == nil {
 		return "n/a"
@@ -165,6 +166,7 @@ func (c *CLCMessage) String() string {
 		c.version, flg, c.path, msg, c.trailer)
 }
 
+// Reserved converts the clc header fields to a string included reserved fields
 func (c *CLCMessage) Reserved() string {
 	if c == nil {
 		return "n/a"
@@ -190,7 +192,7 @@ func (c *CLCMessage) Dump() string {
 	return hex.Dump(c.raw)
 }
 
-// parse CLC header in buffer
+// ParseCLCHeader parses the CLC header in buf
 func ParseCLCHeader(buf []byte) *CLCMessage {
 	header := CLCMessage{}
 

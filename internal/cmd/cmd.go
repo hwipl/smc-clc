@@ -32,7 +32,7 @@ var (
 func Run() {
 	flag.Parse()
 	if *httpListen != "" {
-		setHttpOutput()
+		setHTTPOutput()
 	}
 	log.SetOutput(stderr)
 	listen()

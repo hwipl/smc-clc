@@ -8,12 +8,12 @@ import (
 
 func TestParseSMCRAcceptConfirm(t *testing.T) {
 	// prepare message
-	msg_bytes := "e2d4c3d903004410b1a098039babcdef" +
+	msgBytes := "e2d4c3d903004410b1a098039babcdef" +
 		"fe800000000000009a039bfffeabcdef" +
 		"98039babcdef0000e50000187f010000" +
 		"0006230000000000f0a40000000d89a4" +
 		"e2d4c3d9"
-	msg, err := hex.DecodeString(msg_bytes)
+	msg, err := hex.DecodeString(msgBytes)
 	if err != nil {
 		log.Fatal(err)
 	}
