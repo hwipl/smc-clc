@@ -12,7 +12,7 @@ import (
 	"github.com/hwipl/smc-clc/internal/messages"
 )
 
-// handle packet
+// handlePacket handles a packet
 func handlePacket(assembler *tcpassembly.Assembler, packet gopacket.Packet) {
 	// only handle tcp packets (with valid network layer)
 	if packet.NetworkLayer() == nil ||
@@ -36,7 +36,7 @@ func handlePacket(assembler *tcpassembly.Assembler, packet gopacket.Packet) {
 	}
 }
 
-// handle timer event
+// handleTimer handles a timer event
 func handleTimer(assembler *tcpassembly.Assembler) {
 	flushedFmt := "Timer: flushed %d, closed %d connections\n"
 
@@ -48,7 +48,7 @@ func handleTimer(assembler *tcpassembly.Assembler) {
 	}
 }
 
-// listen on network interface and parse packets
+// listen listens on the network interface and parses packets
 func listen() {
 	// open device
 	pcapHandle, pcapErr := pcap.OpenLive(*pcapDevice, int32(*pcapSnaplen),

@@ -7,17 +7,17 @@ import (
 )
 
 var (
-	// flow table
+	// flows stores the flow table
 	flows flowTable
 )
 
-// flow table
+// flowTable stores a flow table protected by a mutex
 type flowTable struct {
 	lock sync.Mutex
 	fmap map[gopacket.Flow]map[gopacket.Flow]bool
 }
 
-// init flow table
+// init initializes the flow table
 func (ft *flowTable) init() {
 	ft.lock.Lock()
 	if ft.fmap == nil {
@@ -26,7 +26,8 @@ func (ft *flowTable) init() {
 	ft.lock.Unlock()
 }
 
-// add entry to flow table
+// add adds an entry identified by the network flow net and the transport flow
+// trans  to the flow table
 func (ft *flowTable) add(net, trans gopacket.Flow) {
 	ft.lock.Lock()
 	if ft.fmap[net] == nil {
@@ -37,7 +38,8 @@ func (ft *flowTable) add(net, trans gopacket.Flow) {
 	ft.lock.Unlock()
 }
 
-// remove entry from flow table
+// del removes the entry identified by the network flow net and the tansport
+// flow trans from the flow table
 func (ft *flowTable) del(net, trans gopacket.Flow) {
 	ft.lock.Lock()
 	if ft.fmap[net] != nil {
@@ -46,7 +48,8 @@ func (ft *flowTable) del(net, trans gopacket.Flow) {
 	ft.lock.Unlock()
 }
 
-// get entry from flow table
+// get returns the entry identified by the network flow net and the transport
+// flow trans from the flow table
 func (ft *flowTable) get(net, trans gopacket.Flow) bool {
 	check := false
 
