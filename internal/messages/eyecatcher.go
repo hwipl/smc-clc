@@ -12,9 +12,10 @@ const (
 	clcTrailerLen    = clcEyecatcherLen
 )
 
-// SMC eyecatcher
+// eyecatcher stores a SMC eyecatcher
 type eyecatcher [clcEyecatcherLen]byte
 
+// String converts the eyecatcher to a string
 func (e eyecatcher) String() string {
 	if bytes.Compare(e[:], smcrEyecatcher) == 0 {
 		return "SMC-R"
@@ -25,7 +26,7 @@ func (e eyecatcher) String() string {
 	return "Unknown"
 }
 
-// check if there is a SMC-R or SMC-D eyecatcher in the buffer
+// hasEyecatcher checks if there is a SMC-R or SMC-D eyecatcher in buf
 func hasEyecatcher(buf []byte) bool {
 	if bytes.Compare(buf[:clcEyecatcherLen], smcrEyecatcher) == 0 {
 		return true

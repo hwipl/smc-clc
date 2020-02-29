@@ -21,7 +21,7 @@ const (
 	// CLCHeaderLen is the length of the clc header in bytes
 	CLCHeaderLen = 8
 
-	// peer ID
+	// peerIDLen is the length of the peer ID in bytes
 	peerIDLen = 8
 
 	// clc message types
@@ -31,14 +31,16 @@ const (
 	clcDecline  = 0x04
 )
 
+// message is a type for all clc messages
 type message interface {
 	String() string
 	Reserved() string
 }
 
-// SMC path
+// path stores an SMC path
 type path uint8
 
+// String converts the path to a string
 func (p path) String() string {
 	switch p {
 	case smcTypeR:
@@ -52,9 +54,10 @@ func (p path) String() string {
 	}
 }
 
-// SMC peer ID
+// peerID stores a SMC peer ID
 type peerID [peerIDLen]byte
 
+// String converts the peer ID to a string
 func (p peerID) String() string {
 	instance := binary.BigEndian.Uint16(p[:2])
 	roceMAC := net.HardwareAddr(p[2:8])
@@ -166,7 +169,8 @@ func (c *CLCMessage) String() string {
 		c.version, flg, c.path, msg, c.trailer)
 }
 
-// Reserved converts the clc header fields to a string included reserved fields
+// Reserved converts the clc header fields to a string including reserved
+// message fields
 func (c *CLCMessage) Reserved() string {
 	if c == nil {
 		return "n/a"

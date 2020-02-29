@@ -12,37 +12,38 @@ const (
 	clcIPv6PrefixLen = 17
 )
 
-// SMC IPv6 Prefix
+// ipv6Prefix stores a SMC IPv6 Prefix
 type ipv6Prefix struct {
 	prefix    net.IP
 	prefixLen uint8
 }
 
+// String converts ipv6Prefix to a string
 func (p ipv6Prefix) String() string {
 	return fmt.Sprintf("%s/%d", p.prefix, p.prefixLen)
 }
 
-// CLC Proposal Message
+// clcProposalMsg stores a CLC Proposal message
 type clcProposalMsg struct {
 	hdr          *CLCMessage
-	senderPeerID peerID           /* unique system id */
-	ibGID        net.IP           /* gid of ib_device port */
-	ibMAC        net.HardwareAddr /* mac of ib_device port */
-	ipAreaOffset uint16           /* offset to IP address info area */
+	senderPeerID peerID           // unique system id
+	ibGID        net.IP           // gid of ib_device port
+	ibMAC        net.HardwareAddr // mac of ib_device port
+	ipAreaOffset uint16           // offset to IP address info area
 
 	// Optional SMC-D info
-	smcdGID  uint64 /* ISM GID of requestor */
+	smcdGID  uint64 // ISM GID of requestor
 	reserved [32]byte
 
 	// IP/prefix info
-	prefix          net.IP /* subnet mask (rather prefix) */
-	prefixLen       uint8  /* number of significant bits in mask */
+	prefix          net.IP // subnet mask (rather prefix)
+	prefixLen       uint8  // number of significant bits in mask
 	reserved2       [2]byte
-	ipv6PrefixesCnt uint8 /* number of IPv6 prefixes in prefix array */
+	ipv6PrefixesCnt uint8 // number of IPv6 prefixes in prefix array
 	ipv6Prefixes    []ipv6Prefix
 }
 
-// convert CLC Proposal to string
+// String converts the CLC Proposal message to a string
 func (p *clcProposalMsg) String() string {
 	if p == nil {
 		return "n/a"
@@ -62,6 +63,8 @@ func (p *clcProposalMsg) String() string {
 		p.ipv6PrefixesCnt, ipv6Prefixes)
 }
 
+// Reserved converts the CLC Proposal message to a string including reserved
+// message fields
 func (p *clcProposalMsg) Reserved() string {
 	if p == nil {
 		return "n/a"
@@ -83,7 +86,7 @@ func (p *clcProposalMsg) Reserved() string {
 		ipv6Prefixes)
 }
 
-// parse CLC Proposal in buffer
+// parseCLCProposal parses the CLC Proposal message in buf
 func parseCLCProposal(hdr *CLCMessage, buf []byte) *clcProposalMsg {
 	proposal := clcProposalMsg{}
 	proposal.hdr = hdr

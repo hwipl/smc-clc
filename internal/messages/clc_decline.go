@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// clc decline message
+	// clcDeclineLen is the length of a clc decline message in bytes
 	clcDeclineLen = 28
 
 	// decline diagnosis codes (linux)
@@ -35,8 +35,10 @@ const (
 	clcDeclineErrRegRMB  = 0x09990003 /* reg rmb failed */
 )
 
+// peerDiagnosis stores the decline diagnosis code in a decline message
 type peerDiagnosis uint32
 
+// String converts the peerDiagnosis to a string
 func (p peerDiagnosis) String() string {
 	// parse peer diagnosis code
 	var diag string
@@ -91,15 +93,15 @@ func (p peerDiagnosis) String() string {
 	return fmt.Sprintf("%#x (%s)", uint32(p), diag)
 }
 
-// CLC Decline Message
+// clcDeclineMsg stores a CLC Decline message
 type clcDeclineMsg struct {
 	hdr           *CLCMessage
-	senderPeerID  peerID        /* sender peer_id */
-	peerDiagnosis peerDiagnosis /* diagnosis information */
+	senderPeerID  peerID        // sender peer id
+	peerDiagnosis peerDiagnosis // diagnosis information
 	reserved      [4]byte
 }
 
-// convert CLC Decline Message to string
+// String converts the CLC Decline message to a string
 func (d *clcDeclineMsg) String() string {
 	if d == nil {
 		return "n/a"
@@ -109,6 +111,8 @@ func (d *clcDeclineMsg) String() string {
 	return fmt.Sprintf(declineFmt, d.senderPeerID, d.peerDiagnosis)
 }
 
+// Reserved converts the CLC Decline message to a string including reserved
+// message fields
 func (d *clcDeclineMsg) Reserved() string {
 	if d == nil {
 		return "n/a"
@@ -119,7 +123,7 @@ func (d *clcDeclineMsg) Reserved() string {
 		d.reserved)
 }
 
-// parse CLC Decline in buffer
+// parseCLCDecline parses the CLC Decline in buf
 func parseCLCDecline(hdr *CLCMessage, buf []byte) *clcDeclineMsg {
 	decline := clcDeclineMsg{}
 	decline.hdr = hdr

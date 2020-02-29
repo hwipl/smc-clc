@@ -11,9 +11,10 @@ const (
 	clcSMCRAcceptConfirmLen = 68
 )
 
-// SMC QP MTU
+// qpMTU stores a SMC QP MTU
 type qpMTU uint8
 
+// String converts qpMTU to a string
 func (m qpMTU) String() string {
 	var mtu string
 
@@ -39,7 +40,7 @@ func (m qpMTU) String() string {
 	return fmt.Sprintf("%d (%s)", m, mtu)
 }
 
-// CLC SMC-R Accept/Confirm Message
+// clcSMCRAcceptConfirmMsg stores a CLC SMC-R Accept/Confirm Message
 type clcSMCRAcceptConfirmMsg struct {
 	senderPeerID   peerID           /* unique system id */
 	ibGID          net.IP           /* gid of ib_device port */
@@ -56,7 +57,7 @@ type clcSMCRAcceptConfirmMsg struct {
 	psn            int /* packet sequence number */
 }
 
-// convert CLC SMC-R Accept/Confirm to string
+// String converts the CLC SMC-R Accept/Confirm to a string
 func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	if ac == nil {
 		return "n/a"
@@ -71,6 +72,8 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 		ac.qpMtu, ac.rmbDmaAddr, ac.psn)
 }
 
+// Reserved converts the CLC SMC-R Accept/Confirm to a string including
+// reserved message fields
 func (ac *clcSMCRAcceptConfirmMsg) Reserved() string {
 	if ac == nil {
 		return "n/a"
@@ -87,7 +90,7 @@ func (ac *clcSMCRAcceptConfirmMsg) Reserved() string {
 		ac.reserved2, ac.psn)
 }
 
-// parse SMC-R Accept/Confirm Message
+// parseSMCRAcceptConfirm parses the SMC-R Accept/Confirm message in buf
 func parseSMCRAcceptConfirm(
 	hdr *CLCMessage, buf []byte) *clcSMCRAcceptConfirmMsg {
 	ac := clcSMCRAcceptConfirmMsg{}

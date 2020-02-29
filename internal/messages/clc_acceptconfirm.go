@@ -2,22 +2,23 @@ package messages
 
 import "fmt"
 
-// SMC RMBE size
+// rmbeSize stores the SMC RMBE size
 type rmbeSize uint8
 
+// String converts rmbeSize to a string
 func (s rmbeSize) String() string {
 	size := 1 << (s + 14)
 	return fmt.Sprintf("%d (%d)", s, size)
 }
 
-// CLC Accept/Confirm Message
+// clcAcceptConfirmMsg stores a CLC Accept/Confirm Message
 type clcAcceptConfirmMsg struct {
 	hdr  *CLCMessage
 	smcr *clcSMCRAcceptConfirmMsg
 	smcd *clcSMCDAcceptConfirmMsg
 }
 
-// convert CLC Accept/Confirm to string
+// String converts the CLC Accept/Confirm message to a string
 func (ac *clcAcceptConfirmMsg) String() string {
 	if ac == nil {
 		return "n/a"
@@ -31,6 +32,8 @@ func (ac *clcAcceptConfirmMsg) String() string {
 	return "Unknown"
 }
 
+// Reserved converts the CLC Accept/Confirm message to a string including
+// reserved message fields
 func (ac *clcAcceptConfirmMsg) Reserved() string {
 	if ac == nil {
 		return "n/a"
@@ -44,7 +47,7 @@ func (ac *clcAcceptConfirmMsg) Reserved() string {
 	return "Unknown"
 }
 
-// parse Accept/Confirm Message
+// parseCLCAcceptConfirm parses the Accept/Confirm Message in buf
 func parseCLCAcceptConfirm(hdr *CLCMessage, buf []byte) *clcAcceptConfirmMsg {
 	ac := clcAcceptConfirmMsg{}
 	ac.hdr = hdr
