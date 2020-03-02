@@ -27,3 +27,10 @@ func (b *buffer) copyBuffer() *bytes.Buffer {
 	copy(newBuf, oldBuf)
 	return bytes.NewBuffer(newBuf)
 }
+
+// reset removes everything from the underlying bytes.Buffer
+func (b *buffer) reset() {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+	b.buffer = bytes.Buffer{}
+}

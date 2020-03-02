@@ -17,6 +17,10 @@ func printHTTP(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, b); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
+	flush := r.URL.Query().Get("flush")
+	if flush == "true" {
+		httpBuffer.reset()
+	}
 }
 
 // setHTTPOutput sets the standard output to http and starts a http server
