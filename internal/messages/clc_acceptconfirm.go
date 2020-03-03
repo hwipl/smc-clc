@@ -13,9 +13,8 @@ func (s rmbeSize) String() string {
 
 // clcAcceptConfirmMsg stores a CLC Accept/Confirm Message
 type clcAcceptConfirmMsg struct {
-	hdr  *CLCMessage
-	smcr *clcSMCRAcceptConfirmMsg
-	smcd *clcSMCDAcceptConfirmMsg
+	hdr     *CLCMessage
+	message message
 }
 
 // String converts the CLC Accept/Confirm message to a string
@@ -23,11 +22,8 @@ func (ac *clcAcceptConfirmMsg) String() string {
 	if ac == nil {
 		return "n/a"
 	}
-	if ac.smcr != nil {
-		return ac.smcr.String()
-	}
-	if ac.smcd != nil {
-		return ac.smcd.String()
+	if ac.message != nil {
+		return ac.message.String()
 	}
 	return "Unknown"
 }
@@ -38,11 +34,8 @@ func (ac *clcAcceptConfirmMsg) Reserved() string {
 	if ac == nil {
 		return "n/a"
 	}
-	if ac.smcr != nil {
-		return ac.smcr.Reserved()
-	}
-	if ac.smcd != nil {
-		return ac.smcd.Reserved()
+	if ac.message != nil {
+		return ac.message.Reserved()
 	}
 	return "Unknown"
 }
@@ -53,10 +46,10 @@ func parseCLCAcceptConfirm(hdr *CLCMessage, buf []byte) *clcAcceptConfirmMsg {
 	ac.hdr = hdr
 
 	if hdr.path == smcTypeR {
-		ac.smcr = parseSMCRAcceptConfirm(hdr, buf)
+		ac.message = parseSMCRAcceptConfirm(hdr, buf)
 	}
 	if hdr.path == smcTypeD {
-		ac.smcd = parseSMCDAcceptConfirm(hdr, buf)
+		ac.message = parseSMCDAcceptConfirm(hdr, buf)
 	}
 
 	return &ac
