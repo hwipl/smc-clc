@@ -12,6 +12,7 @@ const (
 
 // clcSMCDAcceptConfirmMsg stores a CLC SMC-D Accept/Confirm Message
 type clcSMCDAcceptConfirmMsg struct {
+	hdr       *CLCMessage
 	smcdGID   uint64   /* Sender GID */
 	smcdToken uint64   /* DMB token */
 	dmbeIdx   uint8    /* DMBE index */
@@ -53,6 +54,7 @@ func (ac *clcSMCDAcceptConfirmMsg) Reserved() string {
 func parseSMCDAcceptConfirm(
 	hdr *CLCMessage, buf []byte) *clcSMCDAcceptConfirmMsg {
 	ac := clcSMCDAcceptConfirmMsg{}
+	ac.hdr = hdr
 
 	// check if message is long enough
 	if hdr.Length < clcSMCDAcceptConfirmLen {

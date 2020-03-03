@@ -42,6 +42,7 @@ func (m qpMTU) String() string {
 
 // clcSMCRAcceptConfirmMsg stores a CLC SMC-R Accept/Confirm Message
 type clcSMCRAcceptConfirmMsg struct {
+	hdr            *CLCMessage
 	senderPeerID   peerID           /* unique system id */
 	ibGID          net.IP           /* gid of ib_device port */
 	ibMAC          net.HardwareAddr /* mac of ib_device port */
@@ -94,6 +95,7 @@ func (ac *clcSMCRAcceptConfirmMsg) Reserved() string {
 func parseSMCRAcceptConfirm(
 	hdr *CLCMessage, buf []byte) *clcSMCRAcceptConfirmMsg {
 	ac := clcSMCRAcceptConfirmMsg{}
+	ac.hdr = hdr
 
 	// check if message is long enough
 	if hdr.Length < clcSMCRAcceptConfirmLen {
