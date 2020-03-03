@@ -75,6 +75,39 @@ func TestParseCLCHeaderAccept(t *testing.T) {
 	}
 }
 
+func TestParseCLCHeaderAcceptSMCD(t *testing.T) {
+	// prepare message
+	msgBytes := "e2d4c3c4020030110123456789abcdef" +
+		"0123456789abcdefff100000ffffffff" +
+		"000000000000000000000000e2d4c3c4"
+	msg, err := hex.DecodeString(msgBytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// parse message
+	clc := ParseCLCHeader(msg)
+	clc.Parse(msg)
+
+	// check output message without reserved fields
+	want := "Accept: Eyecatcher: SMC-D, Type: 2 (Accept), " +
+		"Length: 48, Version: 1, First Contact: 0, Path: SMC-D, " +
+		clc.message.String() + ", Trailer: SMC-D"
+	got := clc.String()
+	if got != want {
+		t.Errorf("clc.String() = %s; want %s", got, want)
+	}
+
+	// check output message with reserved fields
+	want = "Accept: Eyecatcher: SMC-D, Type: 2 (Accept), " +
+		"Length: 48, Version: 1, First Contact: 0, Reserved: 0x0, " +
+		"Path: SMC-D, " + clc.message.Reserved() + ", Trailer: SMC-D"
+	got = clc.Reserved()
+	if got != want {
+		t.Errorf("clc.Reserved() = %s; want %s", got, want)
+	}
+}
+
 func TestParseCLCHeaderConfirm(t *testing.T) {
 	// prepare message
 	msgBytes := "e2d4c3d903004410b1a098039babcdef" +
@@ -104,6 +137,39 @@ func TestParseCLCHeaderConfirm(t *testing.T) {
 	want = "Confirm: Eyecatcher: SMC-R, Type: 3 (Confirm), " +
 		"Length: 68, Version: 1, Flag: 0, Reserved: 0x0, " +
 		"Path: SMC-R, " + clc.message.Reserved() + ", Trailer: SMC-R"
+	got = clc.Reserved()
+	if got != want {
+		t.Errorf("clc.Reserved() = %s; want %s", got, want)
+	}
+}
+
+func TestParseCLCHeaderConfirmSMCD(t *testing.T) {
+	// prepare message
+	msgBytes := "e2d4c3c4030030110123456789abcdef" +
+		"0123456789abcdefff100000ffffffff" +
+		"000000000000000000000000e2d4c3c4"
+	msg, err := hex.DecodeString(msgBytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// parse message
+	clc := ParseCLCHeader(msg)
+	clc.Parse(msg)
+
+	// check output message without reserved fields
+	want := "Confirm: Eyecatcher: SMC-D, Type: 3 (Confirm), " +
+		"Length: 48, Version: 1, Flag: 0, Path: SMC-D, " +
+		clc.message.String() + ", Trailer: SMC-D"
+	got := clc.String()
+	if got != want {
+		t.Errorf("clc.String() = %s; want %s", got, want)
+	}
+
+	// check output message with reserved fields
+	want = "Confirm: Eyecatcher: SMC-D, Type: 3 (Confirm), " +
+		"Length: 48, Version: 1, Flag: 0, Reserved: 0x0, " +
+		"Path: SMC-D, " + clc.message.Reserved() + ", Trailer: SMC-D"
 	got = clc.Reserved()
 	if got != want {
 		t.Errorf("clc.Reserved() = %s; want %s", got, want)
