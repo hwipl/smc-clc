@@ -40,6 +40,79 @@ func TestParseCLCHeaderProposal(t *testing.T) {
 	}
 }
 
+func TestParseCLCHeaderProposalSMCD(t *testing.T) {
+	// prepare message
+	msgBytes := "e2d4c3c401005c11b1a098039babcdef" +
+		"00000000000000000000000000000000" +
+		"00000000000000280123456789abcdef" +
+		"00000000000000000000000000000000" +
+		"00000000000000000000000000000000" +
+		"7f00000008000000e2d4c3c4"
+	msg, err := hex.DecodeString(msgBytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// parse message
+	clc := ParseCLCHeader(msg)
+	clc.Parse(msg)
+
+	// check output message without reserved fields
+	want := "Proposal: Eyecatcher: SMC-D, Type: 1 (Proposal), " +
+		"Length: 92, Version: 1, Flag: 0, Path: SMC-D, " +
+		clc.message.String() + ", Trailer: SMC-D"
+	got := clc.String()
+	if got != want {
+		t.Errorf("clc.String() = %s; want %s", got, want)
+	}
+
+	// check output message with reserved fields
+	want = "Proposal: Eyecatcher: SMC-D, Type: 1 (Proposal), " +
+		"Length: 92, Version: 1, Flag: 0, Reserved: 0x0, " +
+		"Path: SMC-D, " + clc.message.Reserved() + ", Trailer: SMC-D"
+	got = clc.Reserved()
+	if got != want {
+		t.Errorf("clc.Reserved() = %s; want %s", got, want)
+	}
+}
+
+func TestParseCLCHeaderProposalSMCB(t *testing.T) {
+	// prepare message
+	msgBytes := "e2d4c3d901005c13b1a098039babcdef" +
+		"fe800000000000009a039bfffeabcdef" +
+		"98039babcdef00280123456789abcdef" +
+		"00000000000000000000000000000000" +
+		"00000000000000000000000000000000" +
+		"7f00000008000000e2d4c3d9"
+	msg, err := hex.DecodeString(msgBytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// parse message
+	clc := ParseCLCHeader(msg)
+	clc.Parse(msg)
+
+	// check output message without reserved fields
+	want := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 92, Version: 1, Flag: 0, Path: SMC-R + SMC-D, " +
+		clc.message.String() + ", Trailer: SMC-R"
+	got := clc.String()
+	if got != want {
+		t.Errorf("clc.String() = %s; want %s", got, want)
+	}
+
+	// check output message with reserved fields
+	want = "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 92, Version: 1, Flag: 0, Reserved: 0x0, " +
+		"Path: SMC-R + SMC-D, " + clc.message.Reserved() +
+		", Trailer: SMC-R"
+	got = clc.Reserved()
+	if got != want {
+		t.Errorf("clc.Reserved() = %s; want %s", got, want)
+	}
+}
+
 func TestParseCLCHeaderAccept(t *testing.T) {
 	// prepare message
 	msgBytes := "e2d4c3d902004418b1a098039babcdef" +
