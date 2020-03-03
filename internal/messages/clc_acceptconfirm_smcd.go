@@ -28,8 +28,8 @@ func (ac *clcSMCDAcceptConfirmMsg) String() string {
 		return "n/a"
 	}
 
-	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
-		"DMBE Size %s, Link ID: %d"
+	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
+		"DMBE Size: %s, Link ID: %d"
 	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
 		ac.dmbeSize, ac.linkid)
 }
@@ -41,8 +41,8 @@ func (ac *clcSMCDAcceptConfirmMsg) Reserved() string {
 		return "n/a"
 	}
 
-	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index %d, " +
-		"DMBE Size %s, Reserved: %#x, Reserved: %#x, " +
+	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
+		"DMBE Size: %s, Reserved: %#x, Reserved: %#x, " +
 		"Link ID: %d, Reserved: %#x"
 	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
 		ac.dmbeSize, ac.reserved, ac.reserved2, ac.linkid,
