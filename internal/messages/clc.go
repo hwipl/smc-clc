@@ -32,7 +32,7 @@ const (
 )
 
 // message is a type for all clc messages
-type message interface {
+type Message interface {
 	String() string
 	Reserved() string
 }
@@ -82,7 +82,7 @@ type CLCMessage struct {
 	path     path  // (2 bits)
 
 	// type dependent message content
-	message message
+	message Message
 
 	// trailer
 	trailer eyecatcher

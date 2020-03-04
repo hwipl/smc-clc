@@ -12,7 +12,7 @@ func (s rmbeSize) String() string {
 }
 
 // parseCLCAcceptConfirm parses the Accept/Confirm Message in buf
-func parseCLCAcceptConfirm(hdr *CLCMessage, buf []byte) message {
+func parseCLCAcceptConfirm(hdr *CLCMessage, buf []byte) Message {
 	if hdr.path == smcTypeR {
 		return parseSMCRAcceptConfirm(hdr, buf)
 	}
