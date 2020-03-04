@@ -43,19 +43,19 @@ func (m qpMTU) String() string {
 // clcSMCRAcceptConfirmMsg stores a CLC SMC-R Accept/Confirm Message
 type clcSMCRAcceptConfirmMsg struct {
 	hdr            *CLCMessage
-	senderPeerID   peerID           /* unique system id */
-	ibGID          net.IP           /* gid of ib_device port */
-	ibMAC          net.HardwareAddr /* mac of ib_device port */
-	qpn            int              /* QP number */
-	rmbRkey        uint32           /* RMB rkey */
-	rmbeIdx        uint8            /* Index of RMBE in RMB */
-	rmbeAlertToken uint32           /* unique connection id */
-	rmbeSize       rmbeSize         /* 4 bits buf size (compressed) */
-	qpMtu          qpMTU            /* 4 bits QP mtu */
+	senderPeerID   peerID           // unique system id
+	ibGID          net.IP           // gid of ib_device port
+	ibMAC          net.HardwareAddr // mac of ib_device port
+	qpn            int              // QP number
+	rmbRkey        uint32           // RMB rkey
+	rmbeIdx        uint8            // Index of RMBE in RMB
+	rmbeAlertToken uint32           // unique connection id
+	rmbeSize       rmbeSize         // 4 bits buf size (compressed)
+	qpMtu          qpMTU            // 4 bits QP mtu
 	reserved       byte
-	rmbDmaAddr     uint64 /* RMB virtual address */
+	rmbDmaAddr     uint64 // RMB virtual address
 	reserved2      byte
-	psn            int /* packet sequence number */
+	psn            int // packet sequence number
 }
 
 // String converts the CLC SMC-R Accept/Confirm to a string

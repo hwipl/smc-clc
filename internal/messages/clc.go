@@ -14,9 +14,9 @@ const (
 	CLCMessageMaxSize = 1024
 
 	// smc type/path
-	smcTypeR = 0 /* SMC-R only */
-	smcTypeD = 1 /* SMC-D only */
-	smcTypeB = 3 /* SMC-R and SMC-D */
+	smcTypeR = 0 // SMC-R only
+	smcTypeD = 1 // SMC-D only
+	smcTypeB = 3 // SMC-R and SMC-D
 
 	// CLCHeaderLen is the length of the clc header in bytes
 	CLCHeaderLen = 8
@@ -81,7 +81,7 @@ type CLCMessage struct {
 	reserved byte  // (1 bit)
 	path     path  // (2 bits)
 
-	// type depenent message content
+	// type dependent message content
 	message message
 
 	// trailer

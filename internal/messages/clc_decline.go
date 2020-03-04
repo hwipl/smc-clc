@@ -11,28 +11,28 @@ const (
 	clcDeclineLen = 28
 
 	// decline diagnosis codes (linux)
-	clcDeclineMem        = 0x01010000 /* insufficient memory resources */
-	clcDeclineTimeoutCL  = 0x02010000 /* timeout w4 QP confirm link */
-	clcDeclineTimeoutAL  = 0x02020000 /* timeout w4 QP add link */
-	clcDeclineCnfErr     = 0x03000000 /* configuration error */
-	clcDeclinePeerNoSMC  = 0x03010000 /* peer did not indicate SMC */
-	clcDeclineIPSEC      = 0x03020000 /* IPsec usage */
-	clcDeclineNoSMCDev   = 0x03030000 /* no SMC device found (R or D) */
-	clcDeclineNoSMCDDev  = 0x03030001 /* no SMC-D device found */
-	clcDeclineNoSMCRDev  = 0x03030002 /* no SMC-R device found */
-	clcDeclineSMCDNoTalk = 0x03030003 /* SMC-D dev can't talk to peer */
-	clcDeclineModeUnsupp = 0x03040000 /* smc modes do not match (R or D) */
-	clcDeclineRMBEEyeC   = 0x03050000 /* peer has eyecatcher in RMBE */
-	clcDeclineOptUnsupp  = 0x03060000 /* fastopen sockopt not supported */
-	clcDeclineDiffPrefix = 0x03070000 /* IP prefix / subnet mismatch */
-	clcDeclineGetVLANErr = 0x03080000 /* err to get vlan id of ip device */
-	clcDeclineISMVLANErr = 0x03090000 /* err to reg vlan id on ism dev */
-	clcDeclineSyncErr    = 0x04000000 /* synchronization error */
-	clcDeclinePeerDecl   = 0x05000000 /* peer declined during handshake */
-	clcDeclineInterr     = 0x09990000 /* internal error */
-	clcDeclineErrRTok    = 0x09990001 /* rtoken handling failed */
-	clcDeclineErrRdyLnk  = 0x09990002 /* ib ready link failed */
-	clcDeclineErrRegRMB  = 0x09990003 /* reg rmb failed */
+	clcDeclineMem        = 0x01010000 // insufficient memory resources
+	clcDeclineTimeoutCL  = 0x02010000 // timeout w4 QP confirm link
+	clcDeclineTimeoutAL  = 0x02020000 // timeout w4 QP add link
+	clcDeclineCnfErr     = 0x03000000 // configuration error
+	clcDeclinePeerNoSMC  = 0x03010000 // peer did not indicate SMC
+	clcDeclineIPSEC      = 0x03020000 // IPsec usage
+	clcDeclineNoSMCDev   = 0x03030000 // no SMC device found (R or D)
+	clcDeclineNoSMCDDev  = 0x03030001 // no SMC-D device found
+	clcDeclineNoSMCRDev  = 0x03030002 // no SMC-R device found
+	clcDeclineSMCDNoTalk = 0x03030003 // SMC-D dev can't talk to peer
+	clcDeclineModeUnsupp = 0x03040000 // smc modes do not match (R or D)
+	clcDeclineRMBEEyeC   = 0x03050000 // peer has eyecatcher in RMBE
+	clcDeclineOptUnsupp  = 0x03060000 // fastopen sockopt not supported
+	clcDeclineDiffPrefix = 0x03070000 // IP prefix / subnet mismatch
+	clcDeclineGetVLANErr = 0x03080000 // err to get vlan id of ip device
+	clcDeclineISMVLANErr = 0x03090000 // err to reg vlan id on ism dev
+	clcDeclineSyncErr    = 0x04000000 // synchronization error
+	clcDeclinePeerDecl   = 0x05000000 // peer declined during handshake
+	clcDeclineInterr     = 0x09990000 // internal error
+	clcDeclineErrRTok    = 0x09990001 // rtoken handling failed
+	clcDeclineErrRdyLnk  = 0x09990002 // ib ready link failed
+	clcDeclineErrRegRMB  = 0x09990003 // reg rmb failed
 )
 
 // peerDiagnosis stores the decline diagnosis code in a decline message

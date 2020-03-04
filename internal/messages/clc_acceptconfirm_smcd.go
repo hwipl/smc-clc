@@ -13,13 +13,13 @@ const (
 // clcSMCDAcceptConfirmMsg stores a CLC SMC-D Accept/Confirm Message
 type clcSMCDAcceptConfirmMsg struct {
 	hdr       *CLCMessage
-	smcdGID   uint64   /* Sender GID */
-	smcdToken uint64   /* DMB token */
-	dmbeIdx   uint8    /* DMBE index */
-	dmbeSize  rmbeSize /* 4 bits buf size (compressed) */
-	reserved  byte     /* 4 bits reserved */
+	smcdGID   uint64   // Sender GID
+	smcdToken uint64   // DMB token
+	dmbeIdx   uint8    // DMBE index
+	dmbeSize  rmbeSize // 4 bits buf size (compressed)
+	reserved  byte     // 4 bits reserved
 	reserved2 [2]byte
-	linkid    uint32 /* Link identifier */
+	linkid    uint32 // Link identifier
 	reserved3 [12]byte
 }
 
