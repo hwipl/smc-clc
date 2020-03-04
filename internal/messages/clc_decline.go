@@ -95,7 +95,7 @@ func (p peerDiagnosis) String() string {
 
 // clcDeclineMsg stores a CLC Decline message
 type clcDeclineMsg struct {
-	hdr           *CLCMessage
+	CLCMessage
 	senderPeerID  peerID        // sender peer id
 	peerDiagnosis peerDiagnosis // diagnosis information
 	reserved      [4]byte
@@ -107,8 +107,9 @@ func (d *clcDeclineMsg) String() string {
 		return "n/a"
 	}
 
-	declineFmt := "Peer ID: %s, Peer Diagnosis: %s"
-	return fmt.Sprintf(declineFmt, d.senderPeerID, d.peerDiagnosis)
+	declineFmt := "%s, Peer ID: %s, Peer Diagnosis: %s, %s"
+	return fmt.Sprintf(declineFmt, d.headerString(), d.senderPeerID,
+		d.peerDiagnosis, d.trailerString())
 }
 
 // Reserved converts the CLC Decline message to a string including reserved
@@ -118,37 +119,35 @@ func (d *clcDeclineMsg) Reserved() string {
 		return "n/a"
 	}
 
-	declineFmt := "Peer ID: %s, Peer Diagnosis: %s, Reserved: %#x"
-	return fmt.Sprintf(declineFmt, d.senderPeerID, d.peerDiagnosis,
-		d.reserved)
+	declineFmt := "%s, Peer ID: %s, Peer Diagnosis: %s, Reserved: %#x, %s"
+	return fmt.Sprintf(declineFmt, d.headerReserved(), d.senderPeerID,
+		d.peerDiagnosis, d.reserved, d.trailerString())
 }
 
-// parseCLCDecline parses the CLC Decline in buf
-func parseCLCDecline(hdr *CLCMessage, buf []byte) *clcDeclineMsg {
-	decline := clcDeclineMsg{}
-	decline.hdr = hdr
+// Parse parses the CLC Decline in buf
+func (d *clcDeclineMsg) Parse(buf []byte) {
+	// parse CLC header
+	d.CLCMessage.Parse(buf)
 
 	// check if message is long enough
-	if hdr.Length < clcDeclineLen {
+	if d.Length < clcDeclineLen {
 		log.Println("Error parsing CLC Decline: message too short")
-		errDump(buf[:hdr.Length])
-		return nil
+		errDump(buf[:d.Length])
+		return
 	}
 
 	// skip clc header
 	buf = buf[CLCHeaderLen:]
 
 	// sender peer ID
-	copy(decline.senderPeerID[:], buf[:peerIDLen])
+	copy(d.senderPeerID[:], buf[:peerIDLen])
 	buf = buf[peerIDLen:]
 
 	// peer diagnosis
-	decline.peerDiagnosis = peerDiagnosis(binary.BigEndian.Uint32(buf[:4]))
+	d.peerDiagnosis = peerDiagnosis(binary.BigEndian.Uint32(buf[:4]))
 	buf = buf[4:]
 
 	// reserved
-	copy(decline.reserved[:], buf[:4])
+	copy(d.reserved[:], buf[:4])
 	buf = buf[4:]
-
-	return &decline
 }

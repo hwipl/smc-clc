@@ -33,8 +33,11 @@ const (
 
 // message is a type for all clc messages
 type Message interface {
+	Parse([]byte)
 	String() string
 	Reserved() string
+	Dump() string
+	GetLength() uint16
 }
 
 // path stores an SMC path
@@ -81,9 +84,6 @@ type CLCMessage struct {
 	reserved byte  // (1 bit)
 	path     path  // (2 bits)
 
-	// type dependent message content
-	message Message
-
 	// trailer
 	trailer eyecatcher
 
@@ -93,24 +93,28 @@ type CLCMessage struct {
 
 // Parse parses the CLC message in buf
 func (c *CLCMessage) Parse(buf []byte) {
+	// eyecatcher
+	copy(c.eyecatcher[:], buf[:clcEyecatcherLen])
+
+	// type
+	c.typ = buf[4]
+
+	// length
+	c.Length = binary.BigEndian.Uint16(buf[5:7])
+
+	// 1 byte bitfield: version, flag, reserved, path
+	bitfield := buf[7]
+	c.version = (bitfield & 0b11110000) >> 4
+	c.flag = (bitfield & 0b00001000) >> 3
+	c.reserved = (bitfield & 0b00000100) >> 2
+	c.path = path(bitfield & 0b00000011)
+
 	// trailer
 	copy(c.trailer[:], buf[c.Length-clcTrailerLen:])
 	if !hasEyecatcher(c.trailer[:]) {
 		log.Println("Error parsing CLC message: invalid trailer")
 		errDump(buf[:c.Length])
 		return
-	}
-
-	// parse type dependent message content
-	switch c.typ {
-	case clcProposal:
-		c.message = parseCLCProposal(c, buf)
-	case clcAccept:
-		c.message = parseCLCAcceptConfirm(c, buf)
-	case clcConfirm:
-		c.message = parseCLCAcceptConfirm(c, buf)
-	case clcDecline:
-		c.message = parseCLCDecline(c, buf)
 	}
 
 	// save buffer
@@ -133,6 +137,11 @@ func (c *CLCMessage) typeString() string {
 	}
 }
 
+// GetLength returns the length of the clc message in bytes
+func (c *CLCMessage) GetLength() uint16 {
+	return c.Length
+}
+
 // flagString() converts the flag bit in the message according the message type
 func (c *CLCMessage) flagString() string {
 	switch c.typ {
@@ -149,46 +158,33 @@ func (c *CLCMessage) flagString() string {
 	}
 }
 
-// String converts the clc header fields to a string
-func (c *CLCMessage) String() string {
-	if c == nil {
-		return "n/a"
-	}
-
-	// construct string
+// headerString converts the message header to a string
+func (c *CLCMessage) headerString() string {
 	typ := c.typeString()
 	flg := c.flagString()
-	msg := "n/a"
-	if c.message != nil {
-		msg = c.message.String()
-	}
-
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
-		"Version: %d, %s, Path: %s, %s, Trailer: %s"
+		"Version: %d, %s, Path: %s"
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ, c.Length,
-		c.version, flg, c.path, msg, c.trailer)
+		c.version, flg, c.path)
 }
 
-// Reserved converts the clc header fields to a string including reserved
-// message fields
-func (c *CLCMessage) Reserved() string {
-	if c == nil {
-		return "n/a"
-	}
+// trailerString converts the message trailer to a string
+func (c *CLCMessage) trailerString() string {
+	trailerFmt := "Trailer: %s"
+	return fmt.Sprintf(trailerFmt, c.trailer)
+}
 
+// headerReserved converts the message header fields to a string including
+// reserved message fields
+func (c *CLCMessage) headerReserved() string {
 	// construct string
 	typ := c.typeString()
 	flg := c.flagString()
-	msg := "n/a"
-	if c.message != nil {
-		msg = c.message.Reserved()
-	}
+
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
-		"Version: %d, %s, Reserved: %#x, Path: %s, %s, " +
-		"Trailer: %s"
+		"Version: %d, %s, Reserved: %#x, Path: %s"
 	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ,
-		c.Length, c.version, flg, c.reserved, c.path, msg,
-		c.trailer)
+		c.Length, c.version, flg, c.reserved, c.path)
 }
 
 // Dump returns the raw bytes buffer of the message as hex dump string
@@ -196,37 +192,36 @@ func (c *CLCMessage) Dump() string {
 	return hex.Dump(c.raw)
 }
 
-// ParseCLCHeader parses the CLC header in buf
-func ParseCLCHeader(buf []byte) *CLCMessage {
-	header := CLCMessage{}
-
+func NewMessage(buf []byte) Message {
 	// check eyecatcher first
 	if !hasEyecatcher(buf) {
 		return nil
 	}
 
-	// eyecatcher
-	copy(header.eyecatcher[:], buf[:clcEyecatcherLen])
-
-	// type
-	header.typ = buf[4]
-
-	// length
-	header.Length = binary.BigEndian.Uint16(buf[5:7])
-
-	// check if message is not too big
-	if header.Length > CLCMessageMaxSize {
+	// make sure message is not too big
+	length := binary.BigEndian.Uint16(buf[5:7])
+	if length > CLCMessageMaxSize {
 		log.Println("Error parsing CLC header: message too big")
 		errDump(buf[:CLCHeaderLen])
 		return nil
 	}
 
-	// 1 byte bitfield: version, flag, reserved, path
-	bitfield := buf[7]
-	header.version = (bitfield & 0b11110000) >> 4
-	header.flag = (bitfield & 0b00001000) >> 3
-	header.reserved = (bitfield & 0b00000100) >> 2
-	header.path = path(bitfield & 0b00000011)
-
-	return &header
+	// return new (empty) message of correct type
+	typ := buf[4]
+	switch typ {
+	case clcProposal:
+		return &clcProposalMsg{}
+	case clcAccept, clcConfirm:
+		// check path to determine if it's smc-d or smc-d
+		path := path(buf[7] & 0b00000011)
+		switch path {
+		case smcTypeR:
+			return &clcSMCRAcceptConfirmMsg{}
+		case smcTypeD:
+			return &clcSMCDAcceptConfirmMsg{}
+		}
+	case clcDecline:
+		return &clcDeclineMsg{}
+	}
+	return nil
 }

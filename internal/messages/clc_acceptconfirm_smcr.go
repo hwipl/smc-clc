@@ -42,7 +42,7 @@ func (m qpMTU) String() string {
 
 // clcSMCRAcceptConfirmMsg stores a CLC SMC-R Accept/Confirm Message
 type clcSMCRAcceptConfirmMsg struct {
-	hdr            *CLCMessage
+	CLCMessage
 	senderPeerID   peerID           // unique system id
 	ibGID          net.IP           // gid of ib_device port
 	ibMAC          net.HardwareAddr // mac of ib_device port
@@ -64,13 +64,14 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 		return "n/a"
 	}
 
-	acFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
+	acFmt := "%s, Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
 		"QP Number: %d, RMB RKey: %d, RMBE Index: %d, " +
 		"RMBE Alert Token: %d, RMBE Size: %s, QP MTU: %s, " +
-		"RMB Virtual Address: %#x, Packet Sequence Number: %d"
-	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC, ac.qpn,
-		ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken, ac.rmbeSize,
-		ac.qpMtu, ac.rmbDmaAddr, ac.psn)
+		"RMB Virtual Address: %#x, Packet Sequence Number: %d, %s"
+	return fmt.Sprintf(acFmt, ac.headerString(), ac.senderPeerID, ac.ibGID,
+		ac.ibMAC, ac.qpn, ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken,
+		ac.rmbeSize, ac.qpMtu, ac.rmbDmaAddr, ac.psn,
+		ac.trailerString())
 }
 
 // Reserved converts the CLC SMC-R Accept/Confirm to a string including
@@ -80,32 +81,31 @@ func (ac *clcSMCRAcceptConfirmMsg) Reserved() string {
 		return "n/a"
 	}
 
-	acFmt := "Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
+	acFmt := "%s, Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
 		"QP Number: %d, RMB RKey: %d, RMBE Index: %d, " +
 		"RMBE Alert Token: %d, RMBE Size: %s, QP MTU: %s, " +
 		"Reserved: %#x, RMB Virtual Address: %#x, " +
-		"Reserved: %#x, Packet Sequence Number: %d"
-	return fmt.Sprintf(acFmt, ac.senderPeerID, ac.ibGID, ac.ibMAC,
-		ac.qpn, ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken,
-		ac.rmbeSize, ac.qpMtu, ac.reserved, ac.rmbDmaAddr,
-		ac.reserved2, ac.psn)
+		"Reserved: %#x, Packet Sequence Number: %d, %s"
+	return fmt.Sprintf(acFmt, ac.headerReserved(), ac.senderPeerID,
+		ac.ibGID, ac.ibMAC, ac.qpn, ac.rmbRkey, ac.rmbeIdx,
+		ac.rmbeAlertToken, ac.rmbeSize, ac.qpMtu, ac.reserved,
+		ac.rmbDmaAddr, ac.reserved2, ac.psn, ac.trailerString())
 }
 
-// parseSMCRAcceptConfirm parses the SMC-R Accept/Confirm message in buf
-func parseSMCRAcceptConfirm(
-	hdr *CLCMessage, buf []byte) *clcSMCRAcceptConfirmMsg {
-	ac := clcSMCRAcceptConfirmMsg{}
-	ac.hdr = hdr
+// Parse parses the SMC-R Accept/Confirm message in buf
+func (ac *clcSMCRAcceptConfirmMsg) Parse(buf []byte) {
+	// parse CLC header
+	ac.CLCMessage.Parse(buf)
 
 	// check if message is long enough
-	if hdr.Length < clcSMCRAcceptConfirmLen {
+	if ac.Length < clcSMCRAcceptConfirmLen {
 		err := "Error parsing CLC Accept: message too short"
-		if hdr.typ == clcConfirm {
+		if ac.typ == clcConfirm {
 			err = "Error parsing CLC Confirm: message too short"
 		}
 		log.Println(err)
-		errDump(buf[:hdr.Length])
-		return nil
+		errDump(buf[:ac.Length])
+		return
 	}
 
 	// skip clc header
@@ -165,6 +165,4 @@ func parseSMCRAcceptConfirm(
 	ac.psn |= int(buf[1]) << 8
 	ac.psn |= int(buf[2])
 	buf = buf[3:]
-
-	return &ac
 }

@@ -16,21 +16,29 @@ func TestParseCLCDecline(t *testing.T) {
 	}
 
 	// parse message
-	clcHdr := ParseCLCHeader(msg)
-	decline := parseCLCDecline(clcHdr, msg)
+	decline := NewMessage(msg)
+	decline.Parse(msg)
 
 	// check output message without reserved fields
-	want := "Peer ID: 9509@25:25:25:25:25:00, " +
+	hdr := "Decline: Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
+		"Version: 1, Out of Sync: 0, Path: SMC-R, "
+	mid := "Peer ID: 9509@25:25:25:25:25:00, " +
 		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D))"
+	trl := ", Trailer: SMC-R"
+	want := hdr + mid + trl
 	got := decline.String()
 	if got != want {
 		t.Errorf("decline.String() = %s; want %s", got, want)
 	}
 
 	// check output message with reserved fields
-	want = "Peer ID: 9509@25:25:25:25:25:00, " +
+	hdr = "Decline: Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
+		"Version: 1, Out of Sync: 0, Reserved: 0x0, Path: SMC-R, "
+	mid = "Peer ID: 9509@25:25:25:25:25:00, " +
 		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D)), " +
 		"Reserved: 0x00000000"
+	trl = ", Trailer: SMC-R"
+	want = hdr + mid + trl
 	got = decline.Reserved()
 	if got != want {
 		t.Errorf("decline.Reserved() = %s; want %s", got, want)

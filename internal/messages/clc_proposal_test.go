@@ -18,27 +18,36 @@ func TestParseCLCProposalSMCRIPv4(t *testing.T) {
 	}
 
 	// parse message
-	clcHdr := ParseCLCHeader(msg)
-	proposal := parseCLCProposal(clcHdr, msg)
+	proposal := NewMessage(msg)
+	proposal.Parse(msg)
 
 	// check output message without reserved fields
-	want := "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
+	hdr := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 52, Version: 1, Flag: 0, Path: SMC-R, "
+	mid := "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 0, " +
 		"SMC-D GID: 0, IPv4 Prefix: 127.0.0.0/8, " +
 		"IPv6 Prefix Count: 0"
+	trl := ", Trailer: SMC-R"
+	want := hdr + mid + trl
 	got := proposal.String()
 	if got != want {
 		t.Errorf("proposal.String() = %s; want %s", got, want)
 	}
 
 	// check output message with reserved fields
-	want = "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
+	hdr = "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 52, Version: 1, Flag: 0, Reserved: 0x0, " +
+		"Path: SMC-R, "
+	mid = "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 0, " +
 		"SMC-D GID: 0, Reserved: 0x000000000000000000000000000000000" +
 		"0000000000000000000000000000000, IPv4 Prefix: 127.0.0.0/8, " +
 		"Reserved: 0x0000, IPv6 Prefix Count: 0"
+	trl = ", Trailer: SMC-R"
+	want = hdr + mid + trl
 	got = proposal.Reserved()
 	if got != want {
 		t.Errorf("proposal.Reserved() = %s; want %s", got, want)
@@ -59,26 +68,35 @@ func TestParseCLCProposalSMCDIPv4(t *testing.T) {
 	}
 
 	// parse message
-	clcHdr := ParseCLCHeader(msg)
-	proposal := parseCLCProposal(clcHdr, msg)
+	proposal := NewMessage(msg)
+	proposal.Parse(msg)
 
 	// check output message without reserved fields
-	want := "Peer ID: 45472@98:03:9b:ab:cd:ef, SMC-R GID: ::, " +
+	hdr := "Proposal: Eyecatcher: SMC-D, Type: 1 (Proposal), " +
+		"Length: 92, Version: 1, Flag: 0, Path: SMC-D, "
+	mid := "Peer ID: 45472@98:03:9b:ab:cd:ef, SMC-R GID: ::, " +
 		"RoCE MAC: 00:00:00:00:00:00, IP Area Offset: 40, " +
 		"SMC-D GID: 81985529216486895, IPv4 Prefix: 127.0.0.0/8, " +
 		"IPv6 Prefix Count: 0"
+	trl := ", Trailer: SMC-D"
+	want := hdr + mid + trl
 	got := proposal.String()
 	if got != want {
 		t.Errorf("proposal.String() = %s; want %s", got, want)
 	}
 
 	// check output message with reserved fields
-	want = "Peer ID: 45472@98:03:9b:ab:cd:ef, SMC-R GID: ::, " +
+	hdr = "Proposal: Eyecatcher: SMC-D, Type: 1 (Proposal), " +
+		"Length: 92, Version: 1, Flag: 0, Reserved: 0x0, " +
+		"Path: SMC-D, "
+	mid = "Peer ID: 45472@98:03:9b:ab:cd:ef, SMC-R GID: ::, " +
 		"RoCE MAC: 00:00:00:00:00:00, IP Area Offset: 40, " +
 		"SMC-D GID: 81985529216486895, Reserved: 0x00000000000000000" +
 		"00000000000000000000000000000000000000000000000, " +
 		"IPv4 Prefix: 127.0.0.0/8, Reserved: 0x0000, " +
 		"IPv6 Prefix Count: 0"
+	trl = ", Trailer: SMC-D"
+	want = hdr + mid + trl
 	got = proposal.Reserved()
 	if got != want {
 		t.Errorf("proposal.Reserved() = %s; want %s", got, want)
@@ -99,28 +117,37 @@ func TestParseCLCProposalSMCBIPv4(t *testing.T) {
 	}
 
 	// parse message
-	clcHdr := ParseCLCHeader(msg)
-	proposal := parseCLCProposal(clcHdr, msg)
+	proposal := NewMessage(msg)
+	proposal.Parse(msg)
 
 	// check output message without reserved fields
-	want := "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
+	hdr := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 92, Version: 1, Flag: 0, Path: SMC-R + SMC-D, "
+	mid := "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 40, " +
 		"SMC-D GID: 81985529216486895, IPv4 Prefix: 127.0.0.0/8, " +
 		"IPv6 Prefix Count: 0"
+	trl := ", Trailer: SMC-R"
+	want := hdr + mid + trl
 	got := proposal.String()
 	if got != want {
 		t.Errorf("proposal.String() = %s; want %s", got, want)
 	}
 
 	// check output message with reserved fields
-	want = "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
+	hdr = "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 92, Version: 1, Flag: 0, Reserved: 0x0, " +
+		"Path: SMC-R + SMC-D, "
+	mid = "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 40, " +
 		"SMC-D GID: 81985529216486895, Reserved: 0x00000000000000000" +
 		"00000000000000000000000000000000000000000000000, " +
 		"IPv4 Prefix: 127.0.0.0/8, Reserved: 0x0000, " +
 		"IPv6 Prefix Count: 0"
+	trl = ", Trailer: SMC-R"
+	want = hdr + mid + trl
 	got = proposal.Reserved()
 	if got != want {
 		t.Errorf("proposal.Reserved() = %s; want %s", got, want)
@@ -140,27 +167,36 @@ func TestParseCLCProposalSMCRIPv6(t *testing.T) {
 	}
 
 	// parse message
-	clcHdr := ParseCLCHeader(msg)
-	proposal := parseCLCProposal(clcHdr, msg)
+	proposal := NewMessage(msg)
+	proposal.Parse(msg)
 
 	// check output message without reserved fields
-	want := "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
+	hdr := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 69, Version: 1, Flag: 0, Path: SMC-R, "
+	mid := "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 0, " +
 		"SMC-D GID: 0, IPv4 Prefix: 0.0.0.0/0, " +
 		"IPv6 Prefix Count: 1, IPv6 Prefix: ::1/128"
+	trl := ", Trailer: SMC-R"
+	want := hdr + mid + trl
 	got := proposal.String()
 	if got != want {
 		t.Errorf("proposal.String() = %s; want %s", got, want)
 	}
 
 	// check output message with reserved fields
-	want = "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
+	hdr = "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 69, Version: 1, Flag: 0, Reserved: 0x0, " +
+		"Path: SMC-R, "
+	mid = "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 0, " +
 		"SMC-D GID: 0, Reserved: 0x000000000000000000000000000000000" +
 		"0000000000000000000000000000000, IPv4 Prefix: 0.0.0.0/0, " +
 		"Reserved: 0x0000, IPv6 Prefix Count: 1, IPv6 Prefix: ::1/128"
+	trl = ", Trailer: SMC-R"
+	want = hdr + mid + trl
 	got = proposal.Reserved()
 	if got != want {
 		t.Errorf("proposal.Reserved() = %s; want %s", got, want)
@@ -182,28 +218,37 @@ func TestParseCLCProposalSMCBIPv6(t *testing.T) {
 	}
 
 	// parse message
-	clcHdr := ParseCLCHeader(msg)
-	proposal := parseCLCProposal(clcHdr, msg)
+	proposal := NewMessage(msg)
+	proposal.Parse(msg)
 
 	// check output message without reserved fields
-	want := "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
+	hdr := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 109, Version: 1, Flag: 0, Path: SMC-R + SMC-D, "
+	mid := "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 40, " +
 		"SMC-D GID: 81985529216486895, IPv4 Prefix: 0.0.0.0/0, " +
 		"IPv6 Prefix Count: 1, IPv6 Prefix: ::1/128"
+	trl := ", Trailer: SMC-R"
+	want := hdr + mid + trl
 	got := proposal.String()
 	if got != want {
 		t.Errorf("proposal.String() = %s; want %s", got, want)
 	}
 
 	// check output message with reserved fields
-	want = "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
+	hdr = "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
+		"Length: 109, Version: 1, Flag: 0, Reserved: 0x0, " +
+		"Path: SMC-R + SMC-D, "
+	mid = "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 40, " +
 		"SMC-D GID: 81985529216486895, Reserved: 0x000000000000000" +
 		"0000000000000000000000000000000000000000000000000, " +
 		"IPv4 Prefix: 0.0.0.0/0, Reserved: 0x0000, " +
 		"IPv6 Prefix Count: 1, IPv6 Prefix: ::1/128"
+	trl = ", Trailer: SMC-R"
+	want = hdr + mid + trl
 	got = proposal.Reserved()
 	if got != want {
 		t.Errorf("proposal.Reserved() = %s; want %s", got, want)

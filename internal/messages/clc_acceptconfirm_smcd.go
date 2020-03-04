@@ -12,7 +12,7 @@ const (
 
 // clcSMCDAcceptConfirmMsg stores a CLC SMC-D Accept/Confirm Message
 type clcSMCDAcceptConfirmMsg struct {
-	hdr       *CLCMessage
+	CLCMessage
 	smcdGID   uint64   // Sender GID
 	smcdToken uint64   // DMB token
 	dmbeIdx   uint8    // DMBE index
@@ -29,10 +29,10 @@ func (ac *clcSMCDAcceptConfirmMsg) String() string {
 		return "n/a"
 	}
 
-	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
-		"DMBE Size: %s, Link ID: %d"
-	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
-		ac.dmbeSize, ac.linkid)
+	acFmt := "%s, SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
+		"DMBE Size: %s, Link ID: %d, %s"
+	return fmt.Sprintf(acFmt, ac.headerString(), ac.smcdGID, ac.smcdToken,
+		ac.dmbeIdx, ac.dmbeSize, ac.linkid, ac.trailerString())
 }
 
 // Reserved converts the CLC SMC-D Accept/Confirm to a string including
@@ -42,29 +42,28 @@ func (ac *clcSMCDAcceptConfirmMsg) Reserved() string {
 		return "n/a"
 	}
 
-	acFmt := "SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
+	acFmt := "%s, SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
 		"DMBE Size: %s, Reserved: %#x, Reserved: %#x, " +
-		"Link ID: %d, Reserved: %#x"
-	return fmt.Sprintf(acFmt, ac.smcdGID, ac.smcdToken, ac.dmbeIdx,
-		ac.dmbeSize, ac.reserved, ac.reserved2, ac.linkid,
-		ac.reserved3)
+		"Link ID: %d, Reserved: %#x, %s"
+	return fmt.Sprintf(acFmt, ac.headerReserved(), ac.smcdGID,
+		ac.smcdToken, ac.dmbeIdx, ac.dmbeSize, ac.reserved,
+		ac.reserved2, ac.linkid, ac.reserved3, ac.trailerString())
 }
 
-// parseSMCDAcceptConfirm parses the SMC-D Accept/Confirm Message in buf
-func parseSMCDAcceptConfirm(
-	hdr *CLCMessage, buf []byte) *clcSMCDAcceptConfirmMsg {
-	ac := clcSMCDAcceptConfirmMsg{}
-	ac.hdr = hdr
+// Parse parses the SMC-D Accept/Confirm Message in buf
+func (ac *clcSMCDAcceptConfirmMsg) Parse(buf []byte) {
+	// parse clc header
+	ac.CLCMessage.Parse(buf)
 
 	// check if message is long enough
-	if hdr.Length < clcSMCDAcceptConfirmLen {
+	if ac.Length < clcSMCDAcceptConfirmLen {
 		err := "Error parsing CLC Accept: message too short"
-		if hdr.typ == clcConfirm {
+		if ac.typ == clcConfirm {
 			err = "Error parsing CLC Confirm: message too short"
 		}
 		log.Println(err)
-		errDump(buf[:hdr.Length])
-		return nil
+		errDump(buf[:ac.Length])
+		return
 	}
 
 	// skip clc header
@@ -98,6 +97,4 @@ func parseSMCDAcceptConfirm(
 	// reserved
 	copy(ac.reserved3[:], buf[:12])
 	buf = buf[12:]
-
-	return &ac
 }

@@ -43,7 +43,7 @@ func (h *smcStreamFactory) New(
 }
 
 // printCLC prints the info of stream
-func printCLC(s *smcStream, clc *messages.CLCMessage) {
+func printCLC(s *smcStream, clc messages.Message) {
 	clcFmt := "%s%s:%s -> %s:%s: %s\n"
 	t := ""
 
@@ -64,7 +64,7 @@ func printCLC(s *smcStream, clc *messages.CLCMessage) {
 
 // run parses the smc stream
 func (s *smcStream) run() {
-	var clc *messages.CLCMessage
+	var clc messages.Message
 	buf := make([]byte, clcMessageBufSize)
 	// get at least enough bytes for the CLC header
 	skip := messages.CLCHeaderLen
@@ -88,7 +88,7 @@ func (s *smcStream) run() {
 		// parse and print current CLC message
 		if clc != nil {
 			// parse and print message
-			clc.Parse(buf[skip-int(clc.Length) : skip])
+			clc.Parse(buf[skip-int(clc.GetLength()) : skip])
 			printCLC(s, clc)
 
 			// wait for next handshake message
@@ -104,13 +104,13 @@ func (s *smcStream) run() {
 		}
 
 		// parse header of current CLC message
-		clc = messages.ParseCLCHeader(buf[skip-messages.CLCHeaderLen:])
+		clc = messages.NewMessage(buf[skip-messages.CLCHeaderLen:])
 		if clc == nil {
 			break
 		}
 
 		// skip to end of current message to be able to parse it
-		skip += int(clc.Length) - messages.CLCHeaderLen
+		skip += int(clc.GetLength()) - messages.CLCHeaderLen
 	}
 
 	// discard everything
