@@ -192,10 +192,13 @@ func (c *CLCMessage) Dump() string {
 	return hex.Dump(c.raw)
 }
 
-func NewMessage(buf []byte) Message {
+// NewMessage checks buf for a clc message and returns an empty message of
+// respective type and its length in bytes. Parse the new message before
+// actually using it
+func NewMessage(buf []byte) (Message, uint16) {
 	// check eyecatcher first
 	if !hasEyecatcher(buf) {
-		return nil
+		return nil, 0
 	}
 
 	// make sure message is not too big
@@ -203,25 +206,26 @@ func NewMessage(buf []byte) Message {
 	if length > CLCMessageMaxSize {
 		log.Println("Error parsing CLC header: message too big")
 		errDump(buf[:CLCHeaderLen])
-		return nil
+		return nil, 0
 	}
 
 	// return new (empty) message of correct type
 	typ := buf[4]
 	switch typ {
 	case clcProposal:
-		return &clcProposalMsg{}
+		return &clcProposalMsg{}, length
 	case clcAccept, clcConfirm:
 		// check path to determine if it's smc-d or smc-d
 		path := path(buf[7] & 0b00000011)
 		switch path {
 		case smcTypeR:
-			return &clcSMCRAcceptConfirmMsg{}
+			return &clcSMCRAcceptConfirmMsg{}, length
 		case smcTypeD:
-			return &clcSMCDAcceptConfirmMsg{}
+			return &clcSMCDAcceptConfirmMsg{}, length
 		}
 	case clcDecline:
-		return &clcDeclineMsg{}
+		return &clcDeclineMsg{}, length
 	}
-	return nil
+
+	return nil, 0
 }
