@@ -37,7 +37,6 @@ type Message interface {
 	String() string
 	Reserved() string
 	Dump() string
-	GetLength() uint16
 }
 
 // path stores an SMC path
@@ -135,11 +134,6 @@ func (c *CLCMessage) typeString() string {
 	default:
 		return "Unknown"
 	}
-}
-
-// GetLength returns the length of the clc message in bytes
-func (c *CLCMessage) GetLength() uint16 {
-	return c.Length
 }
 
 // flagString() converts the flag bit in the message according the message type
