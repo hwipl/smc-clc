@@ -17,8 +17,13 @@ func TestParseSMCDAccept(t *testing.T) {
 	}
 
 	// parse message
-	clc := NewMessage(msg)
+	clc, clcLen := NewMessage(msg)
 	clc.Parse(msg)
+
+	// check message length
+	if clcLen != 48 {
+		t.Errorf("clcLen = %d; want %d", clcLen, 48)
+	}
 
 	// check output message without reserved fields
 	hdr := "Accept: Eyecatcher: SMC-D, Type: 2 (Accept), " +
@@ -61,8 +66,13 @@ func TestParseSMCDConfirm(t *testing.T) {
 	}
 
 	// parse message
-	ac := NewMessage(msg)
+	ac, acLen := NewMessage(msg)
 	ac.Parse(msg)
+
+	// check message length
+	if acLen != 48 {
+		t.Errorf("acLen = %d; want %d", acLen, 48)
+	}
 
 	// check output message without reserved fields
 	hdr := "Confirm: Eyecatcher: SMC-D, Type: 3 (Confirm), " +

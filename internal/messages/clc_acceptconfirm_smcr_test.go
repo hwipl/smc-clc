@@ -19,8 +19,13 @@ func TestParseSMCRAccept(t *testing.T) {
 	}
 
 	// parse message
-	clc := NewMessage(msg)
+	clc, clcLen := NewMessage(msg)
 	clc.Parse(msg)
+
+	// check message length
+	if clcLen != 68 {
+		t.Errorf("clcLen = %d; want %d", clcLen, 68)
+	}
 
 	// check output message without reserved fields
 	hdr := "Accept: Eyecatcher: SMC-R, Type: 2 (Accept), " +
@@ -71,8 +76,13 @@ func TestParseSMCRConfirm(t *testing.T) {
 	}
 
 	// parse message
-	ac := NewMessage(msg)
+	ac, acLen := NewMessage(msg)
 	ac.Parse(msg)
+
+	// check message length
+	if acLen != 68 {
+		t.Errorf("acLen = %d; want %d", acLen, 68)
+	}
 
 	// check output message without reserved fields
 	hdr := "Confirm: Eyecatcher: SMC-R, Type: 3 (Confirm), " +

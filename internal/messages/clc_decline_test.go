@@ -16,8 +16,13 @@ func TestParseCLCDecline(t *testing.T) {
 	}
 
 	// parse message
-	decline := NewMessage(msg)
+	decline, declineLen := NewMessage(msg)
 	decline.Parse(msg)
+
+	// check message length
+	if declineLen != 28 {
+		t.Errorf("declineLen = %d; want %d", declineLen, 28)
+	}
 
 	// check output message without reserved fields
 	hdr := "Decline: Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +

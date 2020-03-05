@@ -18,8 +18,13 @@ func TestParseCLCProposalSMCRIPv4(t *testing.T) {
 	}
 
 	// parse message
-	proposal := NewMessage(msg)
+	proposal, proposalLen := NewMessage(msg)
 	proposal.Parse(msg)
+
+	// check message length
+	if proposalLen != 52 {
+		t.Errorf("proposalLen = %d; want %d", proposalLen, 52)
+	}
 
 	// check output message without reserved fields
 	hdr := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
@@ -68,8 +73,13 @@ func TestParseCLCProposalSMCDIPv4(t *testing.T) {
 	}
 
 	// parse message
-	proposal := NewMessage(msg)
+	proposal, proposalLen := NewMessage(msg)
 	proposal.Parse(msg)
+
+	// check message length
+	if proposalLen != 92 {
+		t.Errorf("proposalLen = %d; want %d", proposalLen, 92)
+	}
 
 	// check output message without reserved fields
 	hdr := "Proposal: Eyecatcher: SMC-D, Type: 1 (Proposal), " +
@@ -117,8 +127,13 @@ func TestParseCLCProposalSMCBIPv4(t *testing.T) {
 	}
 
 	// parse message
-	proposal := NewMessage(msg)
+	proposal, proposalLen := NewMessage(msg)
 	proposal.Parse(msg)
+
+	// check message length
+	if proposalLen != 92 {
+		t.Errorf("proposalLen = %d; want %d", proposalLen, 92)
+	}
 
 	// check output message without reserved fields
 	hdr := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
@@ -167,8 +182,13 @@ func TestParseCLCProposalSMCRIPv6(t *testing.T) {
 	}
 
 	// parse message
-	proposal := NewMessage(msg)
+	proposal, proposalLen := NewMessage(msg)
 	proposal.Parse(msg)
+
+	// check message length
+	if proposalLen != 69 {
+		t.Errorf("proposalLen = %d; want %d", proposalLen, 69)
+	}
 
 	// check output message without reserved fields
 	hdr := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
@@ -218,8 +238,13 @@ func TestParseCLCProposalSMCBIPv6(t *testing.T) {
 	}
 
 	// parse message
-	proposal := NewMessage(msg)
+	proposal, proposalLen := NewMessage(msg)
 	proposal.Parse(msg)
+
+	// check message length
+	if proposalLen != 109 {
+		t.Errorf("proposalLen = %d; want %d", proposalLen, 109)
+	}
 
 	// check output message without reserved fields
 	hdr := "Proposal: Eyecatcher: SMC-R, Type: 1 (Proposal), " +
