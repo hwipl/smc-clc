@@ -9,6 +9,7 @@ import (
 
 var (
 	// pcap variables
+	pcapFile    = flag.String("f", "", "the pcap file to read")
 	pcapDevice  = flag.String("i", "eth0", "the interface to listen on")
 	pcapPromisc = flag.Bool("promisc", true, "promiscuous mode")
 	pcapSnaplen = flag.Int("snaplen", 2048, "pcap snaplen")

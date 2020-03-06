@@ -50,9 +50,22 @@ func handleTimer(assembler *tcpassembly.Assembler) {
 
 // listen listens on the network interface and parses packets
 func listen() {
-	// open device
-	pcapHandle, pcapErr := pcap.OpenLive(*pcapDevice, int32(*pcapSnaplen),
-		*pcapPromisc, pcap.BlockForever)
+	// open pcap handle
+	var pcapHandle *pcap.Handle
+	var pcapErr error
+	var startText string
+	if *pcapFile == "" {
+		// open device
+		pcapHandle, pcapErr = pcap.OpenLive(*pcapDevice,
+			int32(*pcapSnaplen), *pcapPromisc, pcap.BlockForever)
+		startText = fmt.Sprintf("Listening on interface %s:\n",
+			*pcapDevice)
+	} else {
+		// open pcap file
+		pcapHandle, pcapErr = pcap.OpenOffline(*pcapFile)
+		startText = fmt.Sprintf("Reading packets from file %s:\n",
+			*pcapFile)
+	}
 	if pcapErr != nil {
 		log.Fatal(pcapErr)
 	}
@@ -67,8 +80,7 @@ func listen() {
 	flows.init()
 
 	// Use the handle as a packet source to process all packets
-	fmt.Fprintf(stdout, "Starting to listen on interface %s.\n",
-		*pcapDevice)
+	fmt.Fprintf(stdout, startText)
 	packetSource := gopacket.NewPacketSource(pcapHandle,
 		pcapHandle.LinkType())
 	packets := packetSource.Packets()
@@ -80,6 +92,9 @@ func listen() {
 	for {
 		select {
 		case packet := <-packets:
+			if packet == nil {
+				return
+			}
 			handlePacket(assembler, packet)
 		case <-ticker:
 			handleTimer(assembler)
