@@ -32,8 +32,7 @@ func TestParseCLCProposalSMCRIPv4(t *testing.T) {
 	mid := "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 0, " +
-		"SMC-D GID: 0, IPv4 Prefix: 127.0.0.0/8, " +
-		"IPv6 Prefix Count: 0"
+		"IPv4 Prefix: 127.0.0.0/8, IPv6 Prefix Count: 0"
 	trl := ", Trailer: SMC-R"
 	want := hdr + mid + trl
 	got := proposal.String()
@@ -48,9 +47,8 @@ func TestParseCLCProposalSMCRIPv4(t *testing.T) {
 	mid = "Peer ID: 45472@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 0, " +
-		"SMC-D GID: 0, Reserved: 0x000000000000000000000000000000000" +
-		"0000000000000000000000000000000, IPv4 Prefix: 127.0.0.0/8, " +
-		"Reserved: 0x0000, IPv6 Prefix Count: 0"
+		"IPv4 Prefix: 127.0.0.0/8, Reserved: 0x0000, " +
+		"IPv6 Prefix Count: 0"
 	trl = ", Trailer: SMC-R"
 	want = hdr + mid + trl
 	got = proposal.Reserved()
@@ -196,8 +194,8 @@ func TestParseCLCProposalSMCRIPv6(t *testing.T) {
 	mid := "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 0, " +
-		"SMC-D GID: 0, IPv4 Prefix: 0.0.0.0/0, " +
-		"IPv6 Prefix Count: 1, IPv6 Prefix: ::1/128"
+		"IPv4 Prefix: 0.0.0.0/0, IPv6 Prefix Count: 1, " +
+		"IPv6 Prefix: ::1/128"
 	trl := ", Trailer: SMC-R"
 	want := hdr + mid + trl
 	got := proposal.String()
@@ -212,9 +210,8 @@ func TestParseCLCProposalSMCRIPv6(t *testing.T) {
 	mid = "Peer ID: 14660@98:03:9b:ab:cd:ef, " +
 		"SMC-R GID: fe80::9a03:9bff:feab:cdef, " +
 		"RoCE MAC: 98:03:9b:ab:cd:ef, IP Area Offset: 0, " +
-		"SMC-D GID: 0, Reserved: 0x000000000000000000000000000000000" +
-		"0000000000000000000000000000000, IPv4 Prefix: 0.0.0.0/0, " +
-		"Reserved: 0x0000, IPv6 Prefix Count: 1, IPv6 Prefix: ::1/128"
+		"IPv4 Prefix: 0.0.0.0/0, Reserved: 0x0000, " +
+		"IPv6 Prefix Count: 1, IPv6 Prefix: ::1/128"
 	trl = ", Trailer: SMC-R"
 	want = hdr + mid + trl
 	got = proposal.Reserved()

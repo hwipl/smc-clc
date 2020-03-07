@@ -49,6 +49,12 @@ func (p *clcProposalMsg) String() string {
 		return "n/a"
 	}
 
+	// smc-d info
+	smcdInfo := ""
+	if p.ipAreaOffset == 40 {
+		smcdInfo = fmt.Sprintf("SMC-D GID: %d, ", p.smcdGID)
+	}
+
 	// ipv6 prefixes
 	ipv6Prefixes := ""
 	for _, prefix := range p.ipv6Prefixes {
@@ -56,10 +62,10 @@ func (p *clcProposalMsg) String() string {
 	}
 
 	proposalFmt := "%s, Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
-		"IP Area Offset: %d, SMC-D GID: %d, " +
-		"IPv4 Prefix: %s/%d, IPv6 Prefix Count: %d%s, %s"
+		"IP Area Offset: %d, %sIPv4 Prefix: %s/%d, " +
+		"IPv6 Prefix Count: %d%s, %s"
 	return fmt.Sprintf(proposalFmt, p.headerString(), p.senderPeerID,
-		p.ibGID, p.ibMAC, p.ipAreaOffset, p.smcdGID, p.prefix,
+		p.ibGID, p.ibMAC, p.ipAreaOffset, smcdInfo, p.prefix,
 		p.prefixLen, p.ipv6PrefixesCnt, ipv6Prefixes,
 		p.trailerString())
 }
@@ -71,6 +77,12 @@ func (p *clcProposalMsg) Reserved() string {
 		return "n/a"
 	}
 
+	// smc-d info
+	smcdInfo := ""
+	if p.ipAreaOffset == 40 {
+		smcdInfo = fmt.Sprintf("SMC-D GID: %d, Reserved: %#x, ",
+			p.smcdGID, p.reserved)
+	}
 	// ipv6 prefixes
 	ipv6Prefixes := ""
 	for _, prefix := range p.ipv6Prefixes {
@@ -78,13 +90,12 @@ func (p *clcProposalMsg) Reserved() string {
 	}
 
 	proposalFmt := "%s, Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
-		"IP Area Offset: %d, SMC-D GID: %d, Reserved: %#x, " +
-		"IPv4 Prefix: %s/%d, Reserved: %#x, " +
+		"IP Area Offset: %d, %sIPv4 Prefix: %s/%d, Reserved: %#x, " +
 		"IPv6 Prefix Count: %d%s, %s"
 	return fmt.Sprintf(proposalFmt, p.headerReserved(), p.senderPeerID,
-		p.ibGID, p.ibMAC, p.ipAreaOffset, p.smcdGID, p.reserved,
-		p.prefix, p.prefixLen, p.reserved2, p.ipv6PrefixesCnt,
-		ipv6Prefixes, p.trailerString())
+		p.ibGID, p.ibMAC, p.ipAreaOffset, smcdInfo, p.prefix,
+		p.prefixLen, p.reserved2, p.ipv6PrefixesCnt, ipv6Prefixes,
+		p.trailerString())
 }
 
 // Parse parses the CLC Proposal message in buf
