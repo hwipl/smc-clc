@@ -10,6 +10,7 @@ import (
 const (
 	clcProposalLen   = 52 // minimum length
 	clcIPv6PrefixLen = 17
+	smcdIpAreaOffset = 40
 )
 
 // ipv6Prefix stores a SMC IPv6 Prefix
@@ -51,7 +52,7 @@ func (p *clcProposalMsg) String() string {
 
 	// smc-d info
 	smcdInfo := ""
-	if p.ipAreaOffset == 40 {
+	if p.ipAreaOffset == smcdIpAreaOffset {
 		smcdInfo = fmt.Sprintf("SMC-D GID: %d, ", p.smcdGID)
 	}
 
@@ -79,7 +80,7 @@ func (p *clcProposalMsg) Reserved() string {
 
 	// smc-d info
 	smcdInfo := ""
-	if p.ipAreaOffset == 40 {
+	if p.ipAreaOffset == smcdIpAreaOffset {
 		smcdInfo = fmt.Sprintf("SMC-D GID: %d, Reserved: %#x, ",
 			p.smcdGID, p.reserved)
 	}
@@ -132,7 +133,7 @@ func (p *clcProposalMsg) Parse(buf []byte) {
 	skip += 2
 
 	// Optional SMC-D info
-	if p.ipAreaOffset == 40 {
+	if p.ipAreaOffset == smcdIpAreaOffset {
 		// smcd GID
 		p.smcdGID = binary.BigEndian.Uint64(buf[skip : skip+8])
 		skip += 8
