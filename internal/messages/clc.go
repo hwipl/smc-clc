@@ -31,7 +31,7 @@ const (
 	clcDecline  = 0x04
 )
 
-// message is a type for all clc messages
+// Message is a type for all clc messages
 type Message interface {
 	Parse([]byte)
 	String() string
