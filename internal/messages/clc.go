@@ -39,6 +39,25 @@ type Message interface {
 	Dump() string
 }
 
+// msgType stores the type of a CLC message
+type msgType uint8
+
+// String() converts the message type to a string
+func (t msgType) String() string {
+	switch t {
+	case clcProposal:
+		return "Proposal"
+	case clcAccept:
+		return "Accept"
+	case clcConfirm:
+		return "Confirm"
+	case clcDecline:
+		return "Decline"
+	default:
+		return "Unknown"
+	}
+}
+
 // path stores an SMC path
 type path uint8
 
@@ -72,7 +91,7 @@ type CLCMessage struct {
 	eyecatcher eyecatcher
 
 	// type of message: proposal, accept, confirm, decline
-	typ uint8
+	typ msgType
 
 	// total length of message
 	Length uint16
@@ -96,7 +115,7 @@ func (c *CLCMessage) Parse(buf []byte) {
 	copy(c.eyecatcher[:], buf[:clcEyecatcherLen])
 
 	// type
-	c.typ = buf[4]
+	c.typ = msgType(buf[4])
 
 	// length
 	c.Length = binary.BigEndian.Uint16(buf[5:7])
@@ -120,22 +139,6 @@ func (c *CLCMessage) Parse(buf []byte) {
 	c.raw = buf
 }
 
-// typeString() converts the message type to a string
-func (c *CLCMessage) typeString() string {
-	switch c.typ {
-	case clcProposal:
-		return "Proposal"
-	case clcAccept:
-		return "Accept"
-	case clcConfirm:
-		return "Confirm"
-	case clcDecline:
-		return "Decline"
-	default:
-		return "Unknown"
-	}
-}
-
 // flagString() converts the flag bit in the message according the message type
 func (c *CLCMessage) flagString() string {
 	switch c.typ {
@@ -154,12 +157,11 @@ func (c *CLCMessage) flagString() string {
 
 // headerString converts the message header to a string
 func (c *CLCMessage) headerString() string {
-	typ := c.typeString()
 	flg := c.flagString()
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
 		"Version: %d, %s, Path: %s"
-	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ, c.Length,
-		c.version, flg, c.path)
+	return fmt.Sprintf(headerFmt, c.typ, c.eyecatcher, c.typ, c.typ,
+		c.Length, c.version, flg, c.path)
 }
 
 // trailerString converts the message trailer to a string
@@ -172,12 +174,11 @@ func (c *CLCMessage) trailerString() string {
 // reserved message fields
 func (c *CLCMessage) headerReserved() string {
 	// construct string
-	typ := c.typeString()
 	flg := c.flagString()
 
 	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
 		"Version: %d, %s, Reserved: %#x, Path: %s"
-	return fmt.Sprintf(headerFmt, typ, c.eyecatcher, c.typ, typ,
+	return fmt.Sprintf(headerFmt, c.typ, c.eyecatcher, c.typ, c.typ,
 		c.Length, c.version, flg, c.reserved, c.path)
 }
 
