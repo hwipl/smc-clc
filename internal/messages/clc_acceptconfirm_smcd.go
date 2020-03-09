@@ -30,9 +30,9 @@ func (ac *clcSMCDAcceptConfirmMsg) String() string {
 	}
 
 	acFmt := "%s, SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
-		"DMBE Size: %s, Link ID: %d, %s"
+		"DMBE Size: %s, Link ID: %d, Trailer: %s"
 	return fmt.Sprintf(acFmt, ac.headerString(), ac.smcdGID, ac.smcdToken,
-		ac.dmbeIdx, ac.dmbeSize, ac.linkid, ac.trailerString())
+		ac.dmbeIdx, ac.dmbeSize, ac.linkid, ac.trailer)
 }
 
 // Reserved converts the CLC SMC-D Accept/Confirm to a string including
@@ -44,10 +44,10 @@ func (ac *clcSMCDAcceptConfirmMsg) Reserved() string {
 
 	acFmt := "%s, SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
 		"DMBE Size: %s, Reserved: %#x, Reserved: %#x, " +
-		"Link ID: %d, Reserved: %#x, %s"
+		"Link ID: %d, Reserved: %#x, Trailer: %s"
 	return fmt.Sprintf(acFmt, ac.headerReserved(), ac.smcdGID,
 		ac.smcdToken, ac.dmbeIdx, ac.dmbeSize, ac.reserved,
-		ac.reserved2, ac.linkid, ac.reserved3, ac.trailerString())
+		ac.reserved2, ac.linkid, ac.reserved3, ac.trailer)
 }
 
 // Parse parses the SMC-D Accept/Confirm Message in buf

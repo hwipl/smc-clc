@@ -103,7 +103,7 @@ type CLCMessage struct {
 	path     path  // (2 bits)
 
 	// trailer
-	trailer eyecatcher
+	trailer trailer
 
 	// raw bytes buffer of the message
 	raw []byte
@@ -162,12 +162,6 @@ func (c *CLCMessage) headerString() string {
 		"Version: %d, %s, Path: %s"
 	return fmt.Sprintf(headerFmt, c.typ, c.eyecatcher, c.typ, c.typ,
 		c.Length, c.version, flg, c.path)
-}
-
-// trailerString converts the message trailer to a string
-func (c *CLCMessage) trailerString() string {
-	trailerFmt := "Trailer: %s"
-	return fmt.Sprintf(trailerFmt, c.trailer)
 }
 
 // headerReserved converts the message header fields to a string including

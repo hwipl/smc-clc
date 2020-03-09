@@ -107,9 +107,9 @@ func (d *clcDeclineMsg) String() string {
 		return "n/a"
 	}
 
-	declineFmt := "%s, Peer ID: %s, Peer Diagnosis: %s, %s"
+	declineFmt := "%s, Peer ID: %s, Peer Diagnosis: %s, Trailer: %s"
 	return fmt.Sprintf(declineFmt, d.headerString(), d.senderPeerID,
-		d.peerDiagnosis, d.trailerString())
+		d.peerDiagnosis, d.trailer)
 }
 
 // Reserved converts the CLC Decline message to a string including reserved
@@ -119,9 +119,10 @@ func (d *clcDeclineMsg) Reserved() string {
 		return "n/a"
 	}
 
-	declineFmt := "%s, Peer ID: %s, Peer Diagnosis: %s, Reserved: %#x, %s"
+	declineFmt := "%s, Peer ID: %s, Peer Diagnosis: %s, Reserved: %#x, " +
+		"Trailer: %s"
 	return fmt.Sprintf(declineFmt, d.headerReserved(), d.senderPeerID,
-		d.peerDiagnosis, d.reserved, d.trailerString())
+		d.peerDiagnosis, d.reserved, d.trailer)
 }
 
 // Parse parses the CLC Decline in buf

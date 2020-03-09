@@ -64,11 +64,10 @@ func (p *clcProposalMsg) String() string {
 
 	proposalFmt := "%s, Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
 		"IP Area Offset: %d, %sIPv4 Prefix: %s/%d, " +
-		"IPv6 Prefix Count: %d%s, %s"
+		"IPv6 Prefix Count: %d%s, Trailer: %s"
 	return fmt.Sprintf(proposalFmt, p.headerString(), p.senderPeerID,
 		p.ibGID, p.ibMAC, p.ipAreaOffset, smcdInfo, p.prefix,
-		p.prefixLen, p.ipv6PrefixesCnt, ipv6Prefixes,
-		p.trailerString())
+		p.prefixLen, p.ipv6PrefixesCnt, ipv6Prefixes, p.trailer)
 }
 
 // Reserved converts the CLC Proposal message to a string including reserved
@@ -92,11 +91,11 @@ func (p *clcProposalMsg) Reserved() string {
 
 	proposalFmt := "%s, Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
 		"IP Area Offset: %d, %sIPv4 Prefix: %s/%d, Reserved: %#x, " +
-		"IPv6 Prefix Count: %d%s, %s"
+		"IPv6 Prefix Count: %d%s, Trailer: %s"
 	return fmt.Sprintf(proposalFmt, p.headerReserved(), p.senderPeerID,
 		p.ibGID, p.ibMAC, p.ipAreaOffset, smcdInfo, p.prefix,
 		p.prefixLen, p.reserved2, p.ipv6PrefixesCnt, ipv6Prefixes,
-		p.trailerString())
+		p.trailer)
 }
 
 // Parse parses the CLC Proposal message in buf

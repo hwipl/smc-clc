@@ -67,11 +67,11 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 	acFmt := "%s, Peer ID: %s, SMC-R GID: %s, RoCE MAC: %s, " +
 		"QP Number: %d, RMB RKey: %d, RMBE Index: %d, " +
 		"RMBE Alert Token: %d, RMBE Size: %s, QP MTU: %s, " +
-		"RMB Virtual Address: %#x, Packet Sequence Number: %d, %s"
+		"RMB Virtual Address: %#x, Packet Sequence Number: %d, " +
+		"Trailer: %s"
 	return fmt.Sprintf(acFmt, ac.headerString(), ac.senderPeerID, ac.ibGID,
 		ac.ibMAC, ac.qpn, ac.rmbRkey, ac.rmbeIdx, ac.rmbeAlertToken,
-		ac.rmbeSize, ac.qpMtu, ac.rmbDmaAddr, ac.psn,
-		ac.trailerString())
+		ac.rmbeSize, ac.qpMtu, ac.rmbDmaAddr, ac.psn, ac.trailer)
 }
 
 // Reserved converts the CLC SMC-R Accept/Confirm to a string including
@@ -85,11 +85,11 @@ func (ac *clcSMCRAcceptConfirmMsg) Reserved() string {
 		"QP Number: %d, RMB RKey: %d, RMBE Index: %d, " +
 		"RMBE Alert Token: %d, RMBE Size: %s, QP MTU: %s, " +
 		"Reserved: %#x, RMB Virtual Address: %#x, " +
-		"Reserved: %#x, Packet Sequence Number: %d, %s"
+		"Reserved: %#x, Packet Sequence Number: %d, Trailer: %s"
 	return fmt.Sprintf(acFmt, ac.headerReserved(), ac.senderPeerID,
 		ac.ibGID, ac.ibMAC, ac.qpn, ac.rmbRkey, ac.rmbeIdx,
 		ac.rmbeAlertToken, ac.rmbeSize, ac.qpMtu, ac.reserved,
-		ac.rmbDmaAddr, ac.reserved2, ac.psn, ac.trailerString())
+		ac.rmbDmaAddr, ac.reserved2, ac.psn, ac.trailer)
 }
 
 // Parse parses the SMC-R Accept/Confirm message in buf
