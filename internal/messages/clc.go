@@ -9,20 +9,6 @@ const (
 	// CLCMessageMaxSize is the maximum allowed CLC message size in bytes
 	// (for sanity checks)
 	CLCMessageMaxSize = 1024
-
-	// smc type/path
-	smcTypeR = 0 // SMC-R only
-	smcTypeD = 1 // SMC-D only
-	smcTypeB = 3 // SMC-R and SMC-D
-
-	// CLCHeaderLen is the length of the clc header in bytes
-	CLCHeaderLen = 8
-
-	// clc message types
-	clcProposal = 0x01
-	clcAccept   = 0x02
-	clcConfirm  = 0x03
-	clcDecline  = 0x04
 )
 
 // CLCMessage stores a clc message
