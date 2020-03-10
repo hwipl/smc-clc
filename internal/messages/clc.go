@@ -3,9 +3,7 @@ package messages
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"log"
-	"net"
 )
 
 const (
@@ -21,25 +19,12 @@ const (
 	// CLCHeaderLen is the length of the clc header in bytes
 	CLCHeaderLen = 8
 
-	// peerIDLen is the length of the peer ID in bytes
-	peerIDLen = 8
-
 	// clc message types
 	clcProposal = 0x01
 	clcAccept   = 0x02
 	clcConfirm  = 0x03
 	clcDecline  = 0x04
 )
-
-// peerID stores a SMC peer ID
-type peerID [peerIDLen]byte
-
-// String converts the peer ID to a string
-func (p peerID) String() string {
-	instance := binary.BigEndian.Uint16(p[:2])
-	roceMAC := net.HardwareAddr(p[2:8])
-	return fmt.Sprintf("%d@%s", instance, roceMAC)
-}
 
 // CLCMessage stores a clc message
 type CLCMessage struct {
