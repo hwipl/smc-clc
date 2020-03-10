@@ -31,7 +31,7 @@ func (ac *clcSMCDAcceptConfirmMsg) String() string {
 
 	acFmt := "%s, SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
 		"DMBE Size: %s, Link ID: %d, Trailer: %s"
-	return fmt.Sprintf(acFmt, ac.headerString(), ac.smcdGID, ac.smcdToken,
+	return fmt.Sprintf(acFmt, ac.header.String(), ac.smcdGID, ac.smcdToken,
 		ac.dmbeIdx, ac.dmbeSize, ac.linkid, ac.trailer)
 }
 
@@ -45,7 +45,7 @@ func (ac *clcSMCDAcceptConfirmMsg) Reserved() string {
 	acFmt := "%s, SMC-D GID: %d, SMC-D Token: %d, DMBE Index: %d, " +
 		"DMBE Size: %s, Reserved: %#x, Reserved: %#x, " +
 		"Link ID: %d, Reserved: %#x, Trailer: %s"
-	return fmt.Sprintf(acFmt, ac.headerReserved(), ac.smcdGID,
+	return fmt.Sprintf(acFmt, ac.header.Reserved(), ac.smcdGID,
 		ac.smcdToken, ac.dmbeIdx, ac.dmbeSize, ac.reserved,
 		ac.reserved2, ac.linkid, ac.reserved3, ac.trailer)
 }

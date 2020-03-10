@@ -31,42 +31,6 @@ const (
 	clcDecline  = 0x04
 )
 
-// msgType stores the type of a CLC message
-type msgType uint8
-
-// String() converts the message type to a string
-func (t msgType) String() string {
-	switch t {
-	case clcProposal:
-		return "Proposal"
-	case clcAccept:
-		return "Accept"
-	case clcConfirm:
-		return "Confirm"
-	case clcDecline:
-		return "Decline"
-	default:
-		return "Unknown"
-	}
-}
-
-// path stores an SMC path
-type path uint8
-
-// String converts the path to a string
-func (p path) String() string {
-	switch p {
-	case smcTypeR:
-		return "SMC-R"
-	case smcTypeD:
-		return "SMC-D"
-	case smcTypeB:
-		return "SMC-R + SMC-D"
-	default:
-		return "unknown"
-	}
-}
-
 // peerID stores a SMC peer ID
 type peerID [peerIDLen]byte
 
@@ -79,20 +43,8 @@ func (p peerID) String() string {
 
 // CLCMessage stores a clc message
 type CLCMessage struct {
-	// eyecatcher
-	eyecatcher eyecatcher
-
-	// type of message: proposal, accept, confirm, decline
-	typ msgType
-
-	// total length of message
-	Length uint16
-
-	// 1 byte bitfield containing version, flag, reserved, path:
-	version  uint8 // (4 bits)
-	flag     uint8 // (1 bit)
-	reserved byte  // (1 bit)
-	path     path  // (2 bits)
+	// header
+	header
 
 	// trailer
 	trailer trailer
@@ -103,21 +55,8 @@ type CLCMessage struct {
 
 // Parse parses the CLC message in buf
 func (c *CLCMessage) Parse(buf []byte) {
-	// eyecatcher
-	copy(c.eyecatcher[:], buf[:clcEyecatcherLen])
-
-	// type
-	c.typ = msgType(buf[4])
-
-	// length
-	c.Length = binary.BigEndian.Uint16(buf[5:7])
-
-	// 1 byte bitfield: version, flag, reserved, path
-	bitfield := buf[7]
-	c.version = (bitfield & 0b11110000) >> 4
-	c.flag = (bitfield & 0b00001000) >> 3
-	c.reserved = (bitfield & 0b00000100) >> 2
-	c.path = path(bitfield & 0b00000011)
+	// header
+	c.header.Parse(buf)
 
 	// trailer
 	copy(c.trailer[:], buf[c.Length-clcTrailerLen:])
@@ -129,43 +68,6 @@ func (c *CLCMessage) Parse(buf []byte) {
 
 	// save buffer
 	c.raw = buf
-}
-
-// flagString() converts the flag bit in the message according the message type
-func (c *CLCMessage) flagString() string {
-	switch c.typ {
-	case clcProposal:
-		return fmt.Sprintf("Flag: %d", c.flag)
-	case clcAccept:
-		return fmt.Sprintf("First Contact: %d", c.flag)
-	case clcConfirm:
-		return fmt.Sprintf("Flag: %d", c.flag)
-	case clcDecline:
-		return fmt.Sprintf("Out of Sync: %d", c.flag)
-	default:
-		return fmt.Sprintf("Flag: %d", c.flag)
-	}
-}
-
-// headerString converts the message header to a string
-func (c *CLCMessage) headerString() string {
-	flg := c.flagString()
-	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
-		"Version: %d, %s, Path: %s"
-	return fmt.Sprintf(headerFmt, c.typ, c.eyecatcher, c.typ, c.typ,
-		c.Length, c.version, flg, c.path)
-}
-
-// headerReserved converts the message header fields to a string including
-// reserved message fields
-func (c *CLCMessage) headerReserved() string {
-	// construct string
-	flg := c.flagString()
-
-	headerFmt := "%s: Eyecatcher: %s, Type: %d (%s), Length: %d, " +
-		"Version: %d, %s, Reserved: %#x, Path: %s"
-	return fmt.Sprintf(headerFmt, c.typ, c.eyecatcher, c.typ, c.typ,
-		c.Length, c.version, flg, c.reserved, c.path)
 }
 
 // Dump returns the raw bytes buffer of the message as hex dump string

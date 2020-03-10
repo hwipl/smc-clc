@@ -108,7 +108,7 @@ func (d *clcDeclineMsg) String() string {
 	}
 
 	declineFmt := "%s, Peer ID: %s, Peer Diagnosis: %s, Trailer: %s"
-	return fmt.Sprintf(declineFmt, d.headerString(), d.senderPeerID,
+	return fmt.Sprintf(declineFmt, d.header.String(), d.senderPeerID,
 		d.peerDiagnosis, d.trailer)
 }
 
@@ -121,7 +121,7 @@ func (d *clcDeclineMsg) Reserved() string {
 
 	declineFmt := "%s, Peer ID: %s, Peer Diagnosis: %s, Reserved: %#x, " +
 		"Trailer: %s"
-	return fmt.Sprintf(declineFmt, d.headerReserved(), d.senderPeerID,
+	return fmt.Sprintf(declineFmt, d.header.Reserved(), d.senderPeerID,
 		d.peerDiagnosis, d.reserved, d.trailer)
 }
 
