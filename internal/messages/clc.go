@@ -2,7 +2,6 @@ package messages
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"log"
 )
 
@@ -35,7 +34,7 @@ type CLCMessage struct {
 	trailer trailer
 
 	// raw bytes buffer of the message
-	raw []byte
+	raw
 }
 
 // Parse parses the CLC message in buf
@@ -47,12 +46,7 @@ func (c *CLCMessage) Parse(buf []byte) {
 	c.trailer.Parse(buf[:c.Length])
 
 	// save buffer
-	c.raw = buf
-}
-
-// Dump returns the raw bytes buffer of the message as hex dump string
-func (c *CLCMessage) Dump() string {
-	return hex.Dump(c.raw)
+	c.raw.Parse(buf)
 }
 
 // NewMessage checks buf for a clc message and returns an empty message of
