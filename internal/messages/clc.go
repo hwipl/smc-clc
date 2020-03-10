@@ -59,12 +59,7 @@ func (c *CLCMessage) Parse(buf []byte) {
 	c.header.Parse(buf)
 
 	// trailer
-	copy(c.trailer[:], buf[c.Length-clcTrailerLen:])
-	if !hasEyecatcher(c.trailer[:]) {
-		log.Println("Error parsing CLC message: invalid trailer")
-		errDump(buf[:c.Length])
-		return
-	}
+	c.trailer.Parse(buf[:c.Length])
 
 	// save buffer
 	c.raw = buf
