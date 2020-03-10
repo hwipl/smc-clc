@@ -31,14 +31,6 @@ const (
 	clcDecline  = 0x04
 )
 
-// Message is a type for all clc messages
-type Message interface {
-	Parse([]byte)
-	String() string
-	Reserved() string
-	Dump() string
-}
-
 // msgType stores the type of a CLC message
 type msgType uint8
 
