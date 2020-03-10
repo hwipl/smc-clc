@@ -2,6 +2,10 @@ package messages
 
 import "log"
 
+const (
+	clcTrailerLen = clcEyecatcherLen
+)
+
 // trailer stores a CLC message trailer
 type trailer eyecatcher
 

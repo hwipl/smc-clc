@@ -9,7 +9,6 @@ var (
 
 const (
 	clcEyecatcherLen = 4
-	clcTrailerLen    = clcEyecatcherLen
 )
 
 // eyecatcher stores a SMC eyecatcher
