@@ -26,7 +26,8 @@ func (p ipv6Prefix) String() string {
 
 // clcProposalMsg stores a CLC Proposal message
 type clcProposalMsg struct {
-	CLCMessage
+	raw
+	header
 	senderPeerID peerID           // unique system id
 	ibGID        net.IP           // gid of ib_device port
 	ibMAC        net.HardwareAddr // mac of ib_device port
@@ -42,6 +43,8 @@ type clcProposalMsg struct {
 	reserved2       [2]byte
 	ipv6PrefixesCnt uint8 // number of IPv6 prefixes in prefix array
 	ipv6Prefixes    []ipv6Prefix
+
+	trailer
 }
 
 // String converts the CLC Proposal message to a string
@@ -100,8 +103,11 @@ func (p *clcProposalMsg) Reserved() string {
 
 // Parse parses the CLC Proposal message in buf
 func (p *clcProposalMsg) Parse(buf []byte) {
+	// save raw message bytes
+	p.raw.Parse(buf)
+
 	// parse CLC header
-	p.CLCMessage.Parse(buf)
+	p.header.Parse(buf)
 
 	// check if message is long enough
 	if p.Length < clcProposalLen {
@@ -194,4 +200,7 @@ func (p *clcProposalMsg) Parse(buf []byte) {
 		// add to ipv6 prefixes
 		p.ipv6Prefixes = append(p.ipv6Prefixes, ip6prefix)
 	}
+
+	// save trailer
+	p.trailer.Parse(buf)
 }

@@ -12,7 +12,8 @@ const (
 
 // clcSMCDAcceptConfirmMsg stores a CLC SMC-D Accept/Confirm Message
 type clcSMCDAcceptConfirmMsg struct {
-	CLCMessage
+	raw
+	header
 	smcdGID   uint64   // Sender GID
 	smcdToken uint64   // DMB token
 	dmbeIdx   uint8    // DMBE index
@@ -21,6 +22,7 @@ type clcSMCDAcceptConfirmMsg struct {
 	reserved2 [2]byte
 	linkid    uint32 // Link identifier
 	reserved3 [12]byte
+	trailer
 }
 
 // String converts the CLC SMC-D Accept/Confirm to a string
@@ -52,8 +54,11 @@ func (ac *clcSMCDAcceptConfirmMsg) Reserved() string {
 
 // Parse parses the SMC-D Accept/Confirm Message in buf
 func (ac *clcSMCDAcceptConfirmMsg) Parse(buf []byte) {
+	// save raw message bytes
+	ac.raw.Parse(buf)
+
 	// parse clc header
-	ac.CLCMessage.Parse(buf)
+	ac.header.Parse(buf)
 
 	// check if message is long enough
 	if ac.Length < clcSMCDAcceptConfirmLen {
@@ -97,4 +102,7 @@ func (ac *clcSMCDAcceptConfirmMsg) Parse(buf []byte) {
 	// reserved
 	copy(ac.reserved3[:], buf[:12])
 	buf = buf[12:]
+
+	// save trailer
+	ac.trailer.Parse(buf)
 }

@@ -11,30 +11,6 @@ const (
 	CLCMessageMaxSize = 1024
 )
 
-// CLCMessage stores a clc message
-type CLCMessage struct {
-	// header
-	header
-
-	// trailer
-	trailer trailer
-
-	// raw bytes buffer of the message
-	raw
-}
-
-// Parse parses the CLC message in buf
-func (c *CLCMessage) Parse(buf []byte) {
-	// header
-	c.header.Parse(buf)
-
-	// trailer
-	c.trailer.Parse(buf[:c.Length])
-
-	// save buffer
-	c.raw.Parse(buf)
-}
-
 // NewMessage checks buf for a clc message and returns an empty message of
 // respective type and its length in bytes. Parse the new message before
 // actually using it
