@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	clcSMCRAcceptConfirmLen = 68
+	clcSMCRAcceptLen = 68
 )
 
 // qpMTU stores a SMC QP MTU
@@ -40,8 +40,8 @@ func (m qpMTU) String() string {
 	return fmt.Sprintf("%d (%s)", m, mtu)
 }
 
-// clcSMCRAcceptConfirmMsg stores a CLC SMC-R Accept/Confirm Message
-type clcSMCRAcceptConfirmMsg struct {
+// clcSMCRAcceptMsg stores a CLC SMC-R Accept message
+type clcSMCRAcceptMsg struct {
 	raw
 	header
 	senderPeerID   peerID           // unique system id
@@ -60,8 +60,8 @@ type clcSMCRAcceptConfirmMsg struct {
 	trailer
 }
 
-// String converts the CLC SMC-R Accept/Confirm to a string
-func (ac *clcSMCRAcceptConfirmMsg) String() string {
+// String converts the CLC SMC-R Accept message to a string
+func (ac *clcSMCRAcceptMsg) String() string {
 	if ac == nil {
 		return "n/a"
 	}
@@ -77,9 +77,9 @@ func (ac *clcSMCRAcceptConfirmMsg) String() string {
 		ac.psn, ac.trailer)
 }
 
-// Reserved converts the CLC SMC-R Accept/Confirm to a string including
+// Reserved converts the CLC SMC-R Accept message to a string including
 // reserved message fields
-func (ac *clcSMCRAcceptConfirmMsg) Reserved() string {
+func (ac *clcSMCRAcceptMsg) Reserved() string {
 	if ac == nil {
 		return "n/a"
 	}
@@ -95,8 +95,8 @@ func (ac *clcSMCRAcceptConfirmMsg) Reserved() string {
 		ac.rmbDmaAddr, ac.reserved2, ac.psn, ac.trailer)
 }
 
-// Parse parses the SMC-R Accept/Confirm message in buf
-func (ac *clcSMCRAcceptConfirmMsg) Parse(buf []byte) {
+// Parse parses the SMC-R Accept message in buf
+func (ac *clcSMCRAcceptMsg) Parse(buf []byte) {
 	// save raw message bytes
 	ac.raw.Parse(buf)
 
@@ -104,7 +104,7 @@ func (ac *clcSMCRAcceptConfirmMsg) Parse(buf []byte) {
 	ac.header.Parse(buf)
 
 	// check if message is long enough
-	if ac.Length < clcSMCRAcceptConfirmLen {
+	if ac.Length < clcSMCRAcceptLen {
 		err := "Error parsing CLC Accept: message too short"
 		if ac.typ == clcConfirm {
 			err = "Error parsing CLC Confirm: message too short"

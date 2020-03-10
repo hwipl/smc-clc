@@ -30,17 +30,25 @@ func NewMessage(buf []byte) (Message, uint16) {
 
 	// return new (empty) message of correct type
 	typ := buf[4]
+	path := path(buf[7] & 0b00000011)
 	switch typ {
 	case clcProposal:
 		return &clcProposalMsg{}, length
-	case clcAccept, clcConfirm:
-		// check path to determine if it's smc-d or smc-d
-		path := path(buf[7] & 0b00000011)
+	case clcAccept:
+		// check path to determine if it's smc-r or smc-d
 		switch path {
 		case smcTypeR:
-			return &clcSMCRAcceptConfirmMsg{}, length
+			return &clcSMCRAcceptMsg{}, length
 		case smcTypeD:
-			return &clcSMCDAcceptConfirmMsg{}, length
+			return &clcSMCDAcceptMsg{}, length
+		}
+	case clcConfirm:
+		// check path to determine if it's smc-r or smc-d
+		switch path {
+		case smcTypeR:
+			return &clcSMCRConfirmMsg{}, length
+		case smcTypeD:
+			return &clcSMCDConfirmMsg{}, length
 		}
 	case clcDecline:
 		return &clcDeclineMsg{}, length
