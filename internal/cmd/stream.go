@@ -14,7 +14,7 @@ import (
 
 const (
 	// CLC message buffer size for 2 CLC messages per flow/direction
-	clcMessageBufSize = clc.CLCMessageMaxSize * 2
+	clcMessageBufSize = clc.MaxMessageSize * 2
 )
 
 // smcStreamFactory implements tcpassembly.StreamFactory

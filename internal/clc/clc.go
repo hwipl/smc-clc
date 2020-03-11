@@ -6,9 +6,9 @@ import (
 )
 
 const (
-	// CLCMessageMaxSize is the maximum allowed CLC message size in bytes
+	// MaxMessageSize is the maximum allowed CLC message size in bytes
 	// (for sanity checks)
-	CLCMessageMaxSize = 1024
+	MaxMessageSize = 1024
 )
 
 // NewMessage checks buf for a clc message and returns an empty message of
@@ -22,7 +22,7 @@ func NewMessage(buf []byte) (Message, uint16) {
 
 	// make sure message is not too big
 	length := binary.BigEndian.Uint16(buf[5:7])
-	if length > CLCMessageMaxSize {
+	if length > MaxMessageSize {
 		log.Println("Error parsing CLC header: message too big")
 		errDump(buf[:CLCHeaderLen])
 		return nil, 0
