@@ -3,7 +3,7 @@ package clc
 import "log"
 
 const (
-	clcTrailerLen = clcEyecatcherLen
+	trailerLen = eyecatcherLen
 )
 
 // trailer stores a CLC message trailer
@@ -11,10 +11,10 @@ type trailer eyecatcher
 
 // Parse parses the CLC message trailer at the end of buf
 func (t *trailer) Parse(buf []byte) {
-	copy(t[:], buf[len(buf)-clcTrailerLen:])
+	copy(t[:], buf[len(buf)-trailerLen:])
 	if !hasEyecatcher(t[:]) {
 		log.Println("Error parsing CLC message: invalid trailer")
-		errDump(buf[len(buf)-clcTrailerLen:])
+		errDump(buf[len(buf)-trailerLen:])
 		return
 	}
 }

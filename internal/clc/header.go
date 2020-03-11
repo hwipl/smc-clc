@@ -11,8 +11,8 @@ const (
 	smcTypeD = 1 // SMC-D only
 	smcTypeB = 3 // SMC-R and SMC-D
 
-	// CLCHeaderLen is the length of the clc header in bytes
-	CLCHeaderLen = 8
+	// HeaderLen is the length of the clc header in bytes
+	HeaderLen = 8
 
 	// clc message types
 	clcProposal = 0x01
@@ -78,7 +78,7 @@ type header struct {
 // Parse parses the CLC message header in buf
 func (h *header) Parse(buf []byte) {
 	// eyecatcher
-	copy(h.eyecatcher[:], buf[:clcEyecatcherLen])
+	copy(h.eyecatcher[:], buf[:eyecatcherLen])
 
 	// type
 	h.typ = msgType(buf[4])

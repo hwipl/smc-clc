@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	clcSMCRAcceptLen = 68
+	acceptSMCRLen = 68
 )
 
 // qpMTU stores a SMC QP MTU
@@ -40,8 +40,8 @@ func (m qpMTU) String() string {
 	return fmt.Sprintf("%d (%s)", m, mtu)
 }
 
-// clcSMCRAcceptMsg stores a CLC SMC-R Accept message
-type clcSMCRAcceptMsg struct {
+// acceptSMCR stores a CLC SMC-R Accept message
+type acceptSMCR struct {
 	raw
 	header
 	senderPeerID   peerID           // unique system id
@@ -61,7 +61,7 @@ type clcSMCRAcceptMsg struct {
 }
 
 // String converts the CLC SMC-R Accept message to a string
-func (ac *clcSMCRAcceptMsg) String() string {
+func (ac *acceptSMCR) String() string {
 	if ac == nil {
 		return "n/a"
 	}
@@ -79,7 +79,7 @@ func (ac *clcSMCRAcceptMsg) String() string {
 
 // Reserved converts the CLC SMC-R Accept message to a string including
 // reserved message fields
-func (ac *clcSMCRAcceptMsg) Reserved() string {
+func (ac *acceptSMCR) Reserved() string {
 	if ac == nil {
 		return "n/a"
 	}
@@ -96,7 +96,7 @@ func (ac *clcSMCRAcceptMsg) Reserved() string {
 }
 
 // Parse parses the SMC-R Accept message in buf
-func (ac *clcSMCRAcceptMsg) Parse(buf []byte) {
+func (ac *acceptSMCR) Parse(buf []byte) {
 	// save raw message bytes
 	ac.raw.Parse(buf)
 
@@ -104,7 +104,7 @@ func (ac *clcSMCRAcceptMsg) Parse(buf []byte) {
 	ac.header.Parse(buf)
 
 	// check if message is long enough
-	if ac.Length < clcSMCRAcceptLen {
+	if ac.Length < acceptSMCRLen {
 		err := "Error parsing CLC Accept: message too short"
 		if ac.typ == clcConfirm {
 			err = "Error parsing CLC Confirm: message too short"
@@ -115,7 +115,7 @@ func (ac *clcSMCRAcceptMsg) Parse(buf []byte) {
 	}
 
 	// skip clc header
-	buf = buf[CLCHeaderLen:]
+	buf = buf[HeaderLen:]
 
 	// sender peer ID
 	copy(ac.senderPeerID[:], buf[:peerIDLen])

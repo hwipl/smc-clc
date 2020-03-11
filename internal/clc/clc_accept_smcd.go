@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	clcSMCDAcceptLen = 48
+	acceptSMCDLen = 48
 )
 
-// clcSMCDAcceptMsg stores a CLC SMC-D Accept message
-type clcSMCDAcceptMsg struct {
+// acceptSMCD stores a CLC SMC-D Accept message
+type acceptSMCD struct {
 	raw
 	header
 	smcdGID   uint64   // Sender GID
@@ -26,7 +26,7 @@ type clcSMCDAcceptMsg struct {
 }
 
 // String converts the CLC SMC-D Accept message to a string
-func (ac *clcSMCDAcceptMsg) String() string {
+func (ac *acceptSMCD) String() string {
 	if ac == nil {
 		return "n/a"
 	}
@@ -39,7 +39,7 @@ func (ac *clcSMCDAcceptMsg) String() string {
 
 // Reserved converts the CLC SMC-D Accept message to a string including
 // reserved message fields
-func (ac *clcSMCDAcceptMsg) Reserved() string {
+func (ac *acceptSMCD) Reserved() string {
 	if ac == nil {
 		return "n/a"
 	}
@@ -53,7 +53,7 @@ func (ac *clcSMCDAcceptMsg) Reserved() string {
 }
 
 // Parse parses the SMC-D Accept message in buf
-func (ac *clcSMCDAcceptMsg) Parse(buf []byte) {
+func (ac *acceptSMCD) Parse(buf []byte) {
 	// save raw message bytes
 	ac.raw.Parse(buf)
 
@@ -61,7 +61,7 @@ func (ac *clcSMCDAcceptMsg) Parse(buf []byte) {
 	ac.header.Parse(buf)
 
 	// check if message is long enough
-	if ac.Length < clcSMCDAcceptLen {
+	if ac.Length < acceptSMCDLen {
 		err := "Error parsing CLC Accept: message too short"
 		if ac.typ == clcConfirm {
 			err = "Error parsing CLC Confirm: message too short"
@@ -72,7 +72,7 @@ func (ac *clcSMCDAcceptMsg) Parse(buf []byte) {
 	}
 
 	// skip clc header
-	buf = buf[CLCHeaderLen:]
+	buf = buf[HeaderLen:]
 
 	// smcd GID
 	ac.smcdGID = binary.BigEndian.Uint64(buf[:8])

@@ -1,7 +1,7 @@
 package clc
 
-// clcSMCRConfirmMsg stores a CLC Confirm message
-type clcSMCRConfirmMsg struct {
+// confirmSMCR stores a CLC Confirm message
+type confirmSMCR struct {
 	// accept and confirm messages have the same message fields
-	clcSMCRAcceptMsg
+	acceptSMCR
 }

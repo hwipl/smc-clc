@@ -24,7 +24,7 @@ func NewMessage(buf []byte) (Message, uint16) {
 	length := binary.BigEndian.Uint16(buf[5:7])
 	if length > MaxMessageSize {
 		log.Println("Error parsing CLC header: message too big")
-		errDump(buf[:CLCHeaderLen])
+		errDump(buf[:HeaderLen])
 		return nil, 0
 	}
 
@@ -33,25 +33,25 @@ func NewMessage(buf []byte) (Message, uint16) {
 	path := path(buf[7] & 0b00000011)
 	switch typ {
 	case clcProposal:
-		return &clcProposalMsg{}, length
+		return &proposal{}, length
 	case clcAccept:
 		// check path to determine if it's smc-r or smc-d
 		switch path {
 		case smcTypeR:
-			return &clcSMCRAcceptMsg{}, length
+			return &acceptSMCR{}, length
 		case smcTypeD:
-			return &clcSMCDAcceptMsg{}, length
+			return &acceptSMCD{}, length
 		}
 	case clcConfirm:
 		// check path to determine if it's smc-r or smc-d
 		switch path {
 		case smcTypeR:
-			return &clcSMCRConfirmMsg{}, length
+			return &confirmSMCR{}, length
 		case smcTypeD:
-			return &clcSMCDConfirmMsg{}, length
+			return &confirmSMCD{}, length
 		}
 	case clcDecline:
-		return &clcDeclineMsg{}, length
+		return &decline{}, length
 	}
 
 	return nil, 0
