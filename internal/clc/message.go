@@ -1,4 +1,4 @@
-package messages
+package clc
 
 // Message is a type for all clc messages
 type Message interface {

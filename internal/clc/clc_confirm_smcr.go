@@ -1,4 +1,4 @@
-package messages
+package clc
 
 // clcSMCRConfirmMsg stores a CLC Confirm message
 type clcSMCRConfirmMsg struct {

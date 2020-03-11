@@ -9,12 +9,12 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/tcpassembly"
 	"github.com/google/gopacket/tcpassembly/tcpreader"
-	"github.com/hwipl/smc-clc/internal/messages"
+	"github.com/hwipl/smc-clc/internal/clc"
 )
 
 const (
 	// CLC message buffer size for 2 CLC messages per flow/direction
-	clcMessageBufSize = messages.CLCMessageMaxSize * 2
+	clcMessageBufSize = clc.CLCMessageMaxSize * 2
 )
 
 // smcStreamFactory implements tcpassembly.StreamFactory
@@ -43,7 +43,7 @@ func (h *smcStreamFactory) New(
 }
 
 // printCLC prints the info of stream
-func printCLC(s *smcStream, clc messages.Message) {
+func printCLC(s *smcStream, clc clc.Message) {
 	clcFmt := "%s%s:%s -> %s:%s: %s\n"
 	t := ""
 
@@ -64,11 +64,11 @@ func printCLC(s *smcStream, clc messages.Message) {
 
 // run parses the smc stream
 func (s *smcStream) run() {
-	var clc messages.Message
+	var clcMsg clc.Message
 	var clcLen uint16
 	buf := make([]byte, clcMessageBufSize)
 	// get at least enough bytes for the CLC header
-	skip := messages.CLCHeaderLen
+	skip := clc.CLCHeaderLen
 	eof := false
 	total := 0
 
@@ -87,15 +87,15 @@ func (s *smcStream) run() {
 		}
 
 		// parse and print current CLC message
-		if clc != nil {
+		if clcMsg != nil {
 			// parse and print message
-			clc.Parse(buf[skip-int(clcLen) : skip])
-			printCLC(s, clc)
+			clcMsg.Parse(buf[skip-int(clcLen) : skip])
+			printCLC(s, clcMsg)
 
 			// wait for next handshake message
-			clc = nil
+			clcMsg = nil
 			clcLen = 0
-			skip += messages.CLCHeaderLen
+			skip += clc.CLCHeaderLen
 			continue
 
 		}
@@ -106,14 +106,14 @@ func (s *smcStream) run() {
 		}
 
 		// parse header of current CLC message
-		clc, clcLen =
-			messages.NewMessage(buf[skip-messages.CLCHeaderLen:])
-		if clc == nil {
+		clcMsg, clcLen =
+			clc.NewMessage(buf[skip-clc.CLCHeaderLen:])
+		if clcMsg == nil {
 			break
 		}
 
 		// skip to end of current message to be able to parse it
-		skip += int(clcLen) - messages.CLCHeaderLen
+		skip += int(clcLen) - clc.CLCHeaderLen
 	}
 
 	// discard everything

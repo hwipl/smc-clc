@@ -9,7 +9,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/google/gopacket/tcpassembly"
-	"github.com/hwipl/smc-clc/internal/messages"
+	"github.com/hwipl/smc-clc/internal/clc"
 )
 
 // handlePacket handles a packet
@@ -29,7 +29,7 @@ func handlePacket(assembler *tcpassembly.Assembler, packet gopacket.Packet) {
 	// if smc option is set, try to parse tcp stream
 	nflow := packet.NetworkLayer().NetworkFlow()
 	tflow := packet.TransportLayer().TransportFlow()
-	if messages.CheckSMCOption(tcp) || flows.get(nflow, tflow) {
+	if clc.CheckSMCOption(tcp) || flows.get(nflow, tflow) {
 		flows.add(nflow, tflow)
 		assembler.AssembleWithTimestamp(nflow, tcp,
 			packet.Metadata().Timestamp)
