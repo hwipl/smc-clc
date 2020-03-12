@@ -15,10 +15,10 @@ const (
 	HeaderLen = 8
 
 	// clc message types
-	clcProposal = 0x01
-	clcAccept   = 0x02
-	clcConfirm  = 0x03
-	clcDecline  = 0x04
+	typeProposal = 0x01
+	typeAccept   = 0x02
+	typeConfirm  = 0x03
+	typeDecline  = 0x04
 )
 
 // msgType stores the type of a CLC message
@@ -27,13 +27,13 @@ type msgType uint8
 // String() converts the message type to a string
 func (t msgType) String() string {
 	switch t {
-	case clcProposal:
+	case typeProposal:
 		return "Proposal"
-	case clcAccept:
+	case typeAccept:
 		return "Accept"
-	case clcConfirm:
+	case typeConfirm:
 		return "Confirm"
-	case clcDecline:
+	case typeDecline:
 		return "Decline"
 	default:
 		return "Unknown"
@@ -97,13 +97,13 @@ func (h *header) Parse(buf []byte) {
 // flagString() converts the flag bit in the message according to message type
 func (h *header) flagString() string {
 	switch h.typ {
-	case clcProposal:
+	case typeProposal:
 		return fmt.Sprintf("Flag: %d", h.flag)
-	case clcAccept:
+	case typeAccept:
 		return fmt.Sprintf("First Contact: %d", h.flag)
-	case clcConfirm:
+	case typeConfirm:
 		return fmt.Sprintf("Flag: %d", h.flag)
-	case clcDecline:
+	case typeDecline:
 		return fmt.Sprintf("Out of Sync: %d", h.flag)
 	default:
 		return fmt.Sprintf("Flag: %d", h.flag)

@@ -106,7 +106,7 @@ func (ac *acceptSMCR) Parse(buf []byte) {
 	// check if message is long enough
 	if ac.Length < acceptSMCRLen {
 		err := "Error parsing CLC Accept: message too short"
-		if ac.typ == clcConfirm {
+		if ac.typ == typeConfirm {
 			err = "Error parsing CLC Confirm: message too short"
 		}
 		log.Println(err)
