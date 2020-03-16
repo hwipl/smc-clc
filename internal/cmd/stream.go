@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"fmt"
 	"io"
 	"log"
-	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/tcpassembly"
@@ -42,26 +40,6 @@ func (h *smcStreamFactory) New(
 	return &sstream.r
 }
 
-// printCLC prints the info of stream
-func printCLC(s *smcStream, clc clc.Message) {
-	clcFmt := "%s%s:%s -> %s:%s: %s\n"
-	t := ""
-
-	if *showTimestamps {
-		t = time.Now().Format("15:04:05.000000 ")
-	}
-	if *showReserved {
-		fmt.Fprintf(stdout, clcFmt, t, s.net.Src(), s.transport.Src(),
-			s.net.Dst(), s.transport.Dst(), clc.Reserved())
-	} else {
-		fmt.Fprintf(stdout, clcFmt, t, s.net.Src(), s.transport.Src(),
-			s.net.Dst(), s.transport.Dst(), clc)
-	}
-	if *showDumps {
-		fmt.Fprintf(stdout, "%s", clc.Dump())
-	}
-}
-
 // run parses the smc stream
 func (s *smcStream) run() {
 	var clcMsg clc.Message
@@ -90,7 +68,7 @@ func (s *smcStream) run() {
 		if clcMsg != nil {
 			// parse and print message
 			clcMsg.Parse(buf[skip-int(clcLen) : skip])
-			printCLC(s, clcMsg)
+			printCLC(s.net, s.transport, clcMsg)
 
 			// wait for next handshake message
 			clcMsg = nil
