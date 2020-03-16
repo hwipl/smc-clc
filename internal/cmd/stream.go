@@ -15,29 +15,10 @@ const (
 	clcMessageBufSize = clc.MaxMessageSize * 2
 )
 
-// smcStreamFactory implements tcpassembly.StreamFactory
-type smcStreamFactory struct{}
-
 // smcStream is used for decoding smc packets
 type smcStream struct {
 	net, transport gopacket.Flow
 	r              tcpreader.ReaderStream
-}
-
-// New creates a new smc stream factory (-> implement
-// tcpassembly.StreamFactory)
-func (h *smcStreamFactory) New(
-	net, transport gopacket.Flow) tcpassembly.Stream {
-	sstream := &smcStream{
-		net:       net,
-		transport: transport,
-		r:         tcpreader.NewReaderStream(),
-	}
-	go sstream.run() // parse stream in goroutine
-
-	// ReaderStream implements tcpassembly.Stream, so we can return a
-	// pointer to it.
-	return &sstream.r
 }
 
 // run parses the smc stream
@@ -103,4 +84,23 @@ func (s *smcStream) run() {
 func (s *smcStream) ReassemblyComplete() {
 	// remove entry from flow table
 	flows.del(s.net, s.transport)
+}
+
+// smcStreamFactory implements tcpassembly.StreamFactory
+type smcStreamFactory struct{}
+
+// New creates a new smc stream factory (-> implement
+// tcpassembly.StreamFactory)
+func (h *smcStreamFactory) New(
+	net, transport gopacket.Flow) tcpassembly.Stream {
+	sstream := &smcStream{
+		net:       net,
+		transport: transport,
+		r:         tcpreader.NewReaderStream(),
+	}
+	go sstream.run() // parse stream in goroutine
+
+	// ReaderStream implements tcpassembly.Stream, so we can return a
+	// pointer to it.
+	return &sstream.r
 }
