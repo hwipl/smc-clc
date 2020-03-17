@@ -3,12 +3,16 @@ package cmd
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"testing"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcapgo"
 	"github.com/google/gopacket/tcpassembly"
 
 	"github.com/hwipl/smc-clc/internal/clc"
@@ -102,6 +106,52 @@ func TestHandlePacket(t *testing.T) {
 
 	// check results
 	want := "127.0.0.1:123 -> 127.0.0.1:456: Decline: " +
+		"Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
+		"Version: 1, Out of Sync: 0, Path: SMC-R, " +
+		"Peer ID: 9509@25:25:25:25:25:00, " +
+		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D)), " +
+		"Trailer: SMC-R\n"
+	got := buf.String()
+	if got != want {
+		t.Errorf("got = %s; want %s", got, want)
+	}
+}
+
+func TestListenPcap(t *testing.T) {
+	// set output to a buffer, disable timestamps, reserved, dumps
+	var buf bytes.Buffer
+	stdout = &buf
+	*showTimestamps = false
+	*showReserved = false
+	*showDumps = false
+
+	// create temporary pcap file
+	tmpfile, err := ioutil.TempFile("", "decline.pcap")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	// create fake packet
+	packet := createFakePacket(123, 456)
+
+	// write fake packet to pcap file
+	w := pcapgo.NewWriter(tmpfile)
+	w.WriteFileHeader(65536, layers.LinkTypeEthernet)
+	w.WritePacket(gopacket.CaptureInfo{
+		CaptureLength: len(packet),
+		Length:        len(packet),
+	}, packet)
+	tmpfile.Close()
+
+	// test listen() with pcap file
+	*pcapFile = tmpfile.Name()
+	listen()
+
+	// check results
+	want := fmt.Sprintf("Reading packets from file %s:\n",
+		tmpfile.Name()) +
+		"127.0.0.1:123 -> 127.0.0.1:456: Decline: " +
 		"Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
 		"Version: 1, Out of Sync: 0, Path: SMC-R, " +
 		"Peer ID: 9509@25:25:25:25:25:00, " +
