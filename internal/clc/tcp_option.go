@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	smcOption = smcrEyecatcher
+	smcOption = SMCREyecatcher
 )
 
 // CheckSMCOption checks if SMC option is set in TCP header

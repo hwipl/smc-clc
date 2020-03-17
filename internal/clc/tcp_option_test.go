@@ -21,7 +21,7 @@ func TestCheckSMCOption(t *testing.T) {
 	opt := layers.TCPOption{
 		OptionType:   254,
 		OptionLength: 6,
-		OptionData:   smcrEyecatcher,
+		OptionData:   SMCREyecatcher,
 	}
 	tcp.Options = append(tcp.Options, opt)
 	want = true
