@@ -14,30 +14,7 @@ import (
 	"github.com/hwipl/smc-clc/internal/clc"
 )
 
-func TestHandlePacket(t *testing.T) {
-	// set output to a buffer, disable timestamps, reserved, dumps
-	var buf bytes.Buffer
-	stdout = &buf
-	*showTimestamps = false
-	*showReserved = false
-	*showDumps = false
-
-	// Set up assembly
-	streamFactory := &smcStreamFactory{}
-	streamPool := tcpassembly.NewStreamPool(streamFactory)
-	assembler := tcpassembly.NewAssembler(streamPool)
-
-	// init flow table
-	flows.init()
-
-	// prepare decline message
-	declineMsg := "e2d4c3d904001c102525252525252500" +
-		"0303000000000000e2d4c3d9"
-	msg, err := hex.DecodeString(declineMsg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func createFakePacket(sport, dport layers.TCPPort) []byte {
 	// prepare creation of fake packet
 	pktBuf := gopacket.NewSerializeBuffer()
 	opts := gopacket.SerializeOptions{
@@ -71,8 +48,8 @@ func TestHandlePacket(t *testing.T) {
 	tcp := layers.TCP{
 		SYN:     true,
 		ACK:     false,
-		SrcPort: 123,
-		DstPort: 456,
+		SrcPort: sport,
+		DstPort: dport,
 		Options: []layers.TCPOption{
 			{
 				OptionType:   254,
@@ -83,18 +60,42 @@ func TestHandlePacket(t *testing.T) {
 	}
 	tcp.SetNetworkLayerForChecksum(&ip)
 
-	// create fake packet
-	err = gopacket.SerializeLayers(pktBuf, opts,
-		&eth,
-		&ip,
-		&tcp,
-		gopacket.Payload(msg))
+	// create payload: clc decline message
+	declineMsg := "e2d4c3d904001c102525252525252500" +
+		"0303000000000000e2d4c3d9"
+	msg, err := hex.DecodeString(declineMsg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	packetData := pktBuf.Bytes()
-	packet := gopacket.NewPacket(packetData, layers.LayerTypeEthernet,
-		gopacket.Default)
+	payload := gopacket.Payload(msg)
+
+	// create fake packet
+	err = gopacket.SerializeLayers(pktBuf, opts, &eth, &ip, &tcp, payload)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return pktBuf.Bytes()
+}
+
+func TestHandlePacket(t *testing.T) {
+	// set output to a buffer, disable timestamps, reserved, dumps
+	var buf bytes.Buffer
+	stdout = &buf
+	*showTimestamps = false
+	*showReserved = false
+	*showDumps = false
+
+	// Set up assembly
+	streamFactory := &smcStreamFactory{}
+	streamPool := tcpassembly.NewStreamPool(streamFactory)
+	assembler := tcpassembly.NewAssembler(streamPool)
+
+	// init flow table
+	flows.init()
+
+	// create fake packet
+	packet := gopacket.NewPacket(createFakePacket(123, 456),
+		layers.LayerTypeEthernet, gopacket.Default)
 
 	// handle packet
 	handlePacket(assembler, packet)
