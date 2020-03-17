@@ -4,7 +4,7 @@ import "bytes"
 
 var (
 	SMCREyecatcher = []byte{0xE2, 0xD4, 0xC3, 0xD9}
-	smcdEyecatcher = []byte{0xE2, 0xD4, 0xC3, 0xC4}
+	SMCDEyecatcher = []byte{0xE2, 0xD4, 0xC3, 0xC4}
 )
 
 const (
@@ -19,7 +19,7 @@ func (e eyecatcher) String() string {
 	if bytes.Compare(e[:], SMCREyecatcher) == 0 {
 		return "SMC-R"
 	}
-	if bytes.Compare(e[:], smcdEyecatcher) == 0 {
+	if bytes.Compare(e[:], SMCDEyecatcher) == 0 {
 		return "SMC-D"
 	}
 	return "Unknown"
@@ -30,7 +30,7 @@ func hasEyecatcher(buf []byte) bool {
 	if bytes.Compare(buf[:eyecatcherLen], SMCREyecatcher) == 0 {
 		return true
 	}
-	if bytes.Compare(buf[:eyecatcherLen], smcdEyecatcher) == 0 {
+	if bytes.Compare(buf[:eyecatcherLen], SMCDEyecatcher) == 0 {
 		return true
 	}
 	return false
