@@ -48,8 +48,8 @@ func handleTimer(assembler *tcpassembly.Assembler) {
 	}
 }
 
-// listen listens on the network interface and parses packets
-func listen() {
+// listenPrepare prepares the assembler and pcap handle for the listen function
+func listenPrepare() (*tcpassembly.Assembler, *pcap.Handle) {
 	// open pcap handle
 	var pcapHandle *pcap.Handle
 	var pcapErr error
@@ -69,7 +69,7 @@ func listen() {
 	if pcapErr != nil {
 		log.Fatal(pcapErr)
 	}
-	defer pcapHandle.Close()
+	fmt.Fprintf(stdout, startText)
 
 	// Set up assembly
 	streamFactory := &smcStreamFactory{}
@@ -79,8 +79,12 @@ func listen() {
 	// init flow table
 	flows.init()
 
+	return assembler, pcapHandle
+}
+
+// listenLoop implements the listen loop for the listen function
+func listenLoop(assembler *tcpassembly.Assembler, pcapHandle *pcap.Handle) {
 	// Use the handle as a packet source to process all packets
-	fmt.Fprintf(stdout, startText)
 	packetSource := gopacket.NewPacketSource(pcapHandle,
 		pcapHandle.LinkType())
 	packets := packetSource.Packets()
@@ -100,4 +104,15 @@ func listen() {
 			handleTimer(assembler)
 		}
 	}
+
+}
+
+// listen listens on the network interface and parses packets
+func listen() {
+	// get assembler and pcap handle
+	assembler, pcapHandle := listenPrepare()
+	defer pcapHandle.Close()
+
+	// start listen loop
+	listenLoop(assembler, pcapHandle)
 }
