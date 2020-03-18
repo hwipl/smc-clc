@@ -14,6 +14,7 @@ var (
 	pcapPromisc = flag.Bool("promisc", true, "promiscuous mode")
 	pcapSnaplen = flag.Int("snaplen", 2048, "pcap snaplen")
 	pcapMaxPkts = flag.Int("maxpkts", 0, "maximum packets to capture")
+	pcapTimeout = flag.Int("timeout", 0, "pcap timeout")
 
 	// display variables
 	showReserved = flag.Bool("reserved", false,
