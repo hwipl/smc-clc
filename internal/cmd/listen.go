@@ -93,6 +93,7 @@ func listenLoop(assembler *tcpassembly.Assembler, pcapHandle *pcap.Handle) {
 	ticker := time.Tick(time.Minute)
 
 	// handle packets and timer events
+	count := 0
 	for {
 		select {
 		case packet := <-packets:
@@ -100,6 +101,10 @@ func listenLoop(assembler *tcpassembly.Assembler, pcapHandle *pcap.Handle) {
 				return
 			}
 			handlePacket(assembler, packet)
+			count++
+			if *pcapMaxPkts > 0 && count == *pcapMaxPkts {
+				return
+			}
 		case <-ticker:
 			handleTimer(assembler)
 		}
