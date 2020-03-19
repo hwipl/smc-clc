@@ -15,6 +15,7 @@ var (
 	pcapSnaplen = flag.Int("snaplen", 2048, "pcap snaplen")
 	pcapMaxPkts = flag.Int("maxpkts", 0, "maximum packets to capture")
 	pcapTimeout = flag.Int("timeout", 0, "pcap timeout")
+	pcapFilter  = flag.String("filter", "", "pcap packet filter")
 
 	// display variables
 	showReserved = flag.Bool("reserved", false,

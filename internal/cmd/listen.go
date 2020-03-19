@@ -76,6 +76,11 @@ func listenPrepare() (*tcpassembly.Assembler, *pcap.Handle) {
 	if pcapErr != nil {
 		log.Fatal(pcapErr)
 	}
+	if *pcapFilter != "" {
+		if err := pcapHandle.SetBPFFilter(*pcapFilter); err != nil {
+			log.Fatal(pcapErr)
+		}
+	}
 	fmt.Fprintf(stdout, startText)
 
 	// Set up assembly
