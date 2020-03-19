@@ -13,10 +13,12 @@ var (
 	pcapDevice  = flag.String("i", "eth0", "the interface to listen on")
 	pcapPromisc = flag.Bool("promisc", true, "promiscuous mode")
 	pcapSnaplen = flag.Int("snaplen", 2048, "pcap snaplen in byte")
-	pcapMaxPkts = flag.Int("maxpkts", 0, "maximum packets to capture")
-	pcapMaxTime = flag.Int("maxtime", 0, "maximum capturing time in s")
 	pcapTimeout = flag.Int("timeout", 0, "pcap timeout in ms")
-	pcapFilter  = flag.String("filter", "", "pcap packet filter")
+	pcapMaxPkts = flag.Int("maxpkts", 0,
+		"maximum packets to capture (may require timeout argument)")
+	pcapMaxTime = flag.Int("maxtime", 0,
+		"maximum capturing time in s (may require timeout argument)")
+	pcapFilter = flag.String("filter", "", "pcap packet filter")
 
 	// display variables
 	showReserved = flag.Bool("reserved", false,
