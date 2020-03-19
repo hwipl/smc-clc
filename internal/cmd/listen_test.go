@@ -14,6 +14,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	"github.com/google/gopacket/tcpassembly"
+	"golang.org/x/sys/unix"
 
 	"github.com/hwipl/smc-clc/internal/clc"
 )
@@ -190,6 +191,97 @@ func TestListenPcap(t *testing.T) {
 	want = fmt.Sprintf("Reading packets from file %s:\n",
 		tmpfile.Name())
 	got = buf.String()
+	if got != want {
+		t.Errorf("got = %s; want %s", got, want)
+	}
+}
+
+func TestListenLoopback(t *testing.T) {
+	// skip this test as non-root user
+	uid := os.Getuid()
+	if uid != 0 {
+		t.Skip("This test requires root privileges.")
+	}
+
+	// set output to a buffer, disable timestamps, reserved, dumps
+	var buf bytes.Buffer
+	stdout = &buf
+	*showTimestamps = false
+	*showReserved = false
+	*showDumps = false
+
+	// "reserve" random source port
+	sportListener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sportListener.Close()
+	sport := sportListener.Addr().(*net.TCPAddr).Port
+
+	// "reserve" random destination port
+	dportListener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dportListener.Close()
+	dport := dportListener.Addr().(*net.TCPAddr).Port
+
+	// prepare listen with loopback device, set a timeout to avoid hanging
+	// in pcap capturing, and set the filter to only capture packets from
+	// the source port to the destination port
+	*pcapFile = ""
+	*pcapDevice = "lo"
+	*pcapTimeout = 1
+	*pcapFilter = fmt.Sprintf("tcp and src port %d and dst port %d", sport,
+		dport)
+	assembler, pcapHandle := listenPrepare()
+	defer pcapHandle.Close()
+
+	// create raw socket
+	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW, unix.ETH_P_ALL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer unix.Close(fd)
+
+	// get loopback interface
+	lo, err := net.InterfaceByName("lo")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// create sockaddr
+	addr := unix.SockaddrLinklayer{
+		Protocol: unix.ETH_P_IP,
+		Ifindex:  lo.Index,
+		Halen:    6,
+	}
+
+	// create fake packet
+	packet := createFakePacket(layers.TCPPort(sport),
+		layers.TCPPort(dport))
+
+	// send fake packet
+	err = unix.Sendto(fd, packet, 0, &addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// handle packets with listen
+	*pcapMaxPkts = 1
+	*pcapMaxTime = 1
+	listenLoop(assembler, pcapHandle)
+
+	// check results
+	want := "Listening on interface lo:\n" +
+		fmt.Sprintf("127.0.0.1:%d -> 127.0.0.1:%d: Decline: ", sport,
+			dport) +
+		"Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
+		"Version: 1, Out of Sync: 0, Path: SMC-R, " +
+		"Peer ID: 9509@25:25:25:25:25:00, " +
+		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D)), " +
+		"Trailer: SMC-R\n"
+	got := buf.String()
 	if got != want {
 		t.Errorf("got = %s; want %s", got, want)
 	}
