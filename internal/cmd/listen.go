@@ -104,6 +104,12 @@ func listenLoop(assembler *tcpassembly.Assembler, pcapHandle *pcap.Handle) {
 	// setup timer
 	ticker := time.Tick(time.Minute)
 
+	// set stop time if configured
+	stop := make(<-chan time.Time)
+	if *pcapMaxTime > 0 {
+		stop = time.After(time.Duration(*pcapMaxTime) * time.Second)
+	}
+
 	// handle packets and timer events
 	count := 0
 	for {
@@ -119,6 +125,8 @@ func listenLoop(assembler *tcpassembly.Assembler, pcapHandle *pcap.Handle) {
 			}
 		case <-ticker:
 			handleTimer(assembler)
+		case <-stop:
+			return
 		}
 	}
 
