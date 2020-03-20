@@ -82,6 +82,175 @@ func createFakePacket(sport, dport layers.TCPPort) []byte {
 	return pktBuf.Bytes()
 }
 
+func createFakeConnPkt(eth layers.Ethernet, ip layers.IPv4,
+	sport, dport layers.TCPPort, SYN, ACK, FIN bool, seq, ack uint32,
+	options []layers.TCPOption, payload []byte) []byte {
+	// prepare creation of fake packet
+	opts := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
+
+	// create tcp header
+	tcp := layers.TCP{
+		SrcPort: sport,
+		DstPort: dport,
+		SYN:     SYN,
+		ACK:     ACK,
+		FIN:     FIN,
+		Seq:     seq,
+		Ack:     ack,
+		Window:  64000,
+	}
+	tcp.SetNetworkLayerForChecksum(&ip)
+
+	// add tcp options if present
+	if options != nil {
+		tcp.Options = options
+	}
+
+	// serialize packet to buffer
+	var err error
+	buf := gopacket.NewSerializeBuffer()
+	if payload != nil {
+		// with payload
+		pl := gopacket.Payload(payload)
+		err = gopacket.SerializeLayers(buf, opts, &eth, &ip, &tcp,
+			pl)
+	} else {
+		// without payload
+		err = gopacket.SerializeLayers(buf, opts, &eth, &ip, &tcp)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// return buffer as bytes
+	return buf.Bytes()
+}
+
+func createFakeConn(cliPort, srvPort layers.TCPPort) [][]byte {
+	// create ethernet header
+	mac, err := net.ParseMAC("00:00:00:00:00:00")
+	if err != nil {
+		log.Fatal(err)
+	}
+	eth := layers.Ethernet{
+		SrcMAC:       mac,
+		DstMAC:       mac,
+		EthernetType: layers.EthernetTypeIPv4,
+	}
+
+	// create ip header
+	ip := layers.IPv4{
+		Version:  4,
+		Flags:    layers.IPv4DontFragment,
+		Id:       1,
+		TTL:      64,
+		Protocol: layers.IPProtocolTCP,
+		SrcIP:    net.IP{127, 0, 0, 1},
+		DstIP:    net.IP{127, 0, 0, 1},
+	}
+
+	// create tcp option
+	options := []layers.TCPOption{
+		{
+			OptionType:   254,
+			OptionLength: 6,
+			OptionData:   clc.SMCREyecatcher,
+		},
+	}
+
+	// create packets of fake connection
+	packets := make([][]byte, 8)
+
+	// create fake SYN packet
+	isn := uint32(100)
+	sport := cliPort
+	dport := srvPort
+	SYN := true
+	ACK := false
+	FIN := false
+	seq := isn
+	ack := uint32(0)
+	packets[0] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
+		seq, ack, options, nil)
+
+	// create fake SYN, ACK packet
+	sport = srvPort
+	dport = cliPort
+	SYN = true
+	ACK = true
+	seq = isn
+	ack = isn + 1
+	packets[1] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
+		seq, ack, options, nil)
+
+	// create fake ACK packet
+	sport = cliPort
+	dport = srvPort
+	SYN = false
+	ACK = true
+	seq = isn + 1
+	ack = isn + 1
+	packets[2] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
+		seq, ack, nil, nil)
+
+	// create payload: clc decline message
+	declineMsg := "e2d4c3d904001c102525252525252500" +
+		"0303000000000000e2d4c3d9"
+	msg, err := hex.DecodeString(declineMsg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// create fake payload packet
+	packets[3] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
+		seq, ack, nil, msg)
+
+	// create fake ACK packet
+	sport = srvPort
+	dport = cliPort
+	SYN = false
+	ACK = true
+	seq = isn + 1
+	ack = isn + 1 + uint32(len(msg))
+	packets[4] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
+		seq, ack, nil, nil)
+
+	// create fake FIN, ACK packet
+	sport = cliPort
+	dport = srvPort
+	FIN = true
+	ACK = true
+	seq = isn + 1 + uint32(len(msg))
+	ack = isn + 1
+	packets[5] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
+		seq, ack, nil, nil)
+
+	// create fake FIN, ACK packet
+	sport = srvPort
+	dport = cliPort
+	FIN = true
+	ACK = true
+	seq = isn + 1
+	ack = isn + 1 + uint32(len(msg)) + 1
+	packets[6] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
+		seq, ack, nil, nil)
+
+	// create fake ACK packet
+	sport = cliPort
+	dport = srvPort
+	FIN = false
+	ACK = true
+	seq = isn + 1 + uint32(len(msg)) + 1
+	ack = isn + 1 + 1
+	packets[7] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
+		seq, ack, nil, nil)
+
+	return packets
+}
+
 func TestHandlePacket(t *testing.T) {
 	// set output to a buffer, disable timestamps, reserved, dumps
 	var buf bytes.Buffer
@@ -113,6 +282,27 @@ func TestHandlePacket(t *testing.T) {
 		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D)), " +
 		"Trailer: SMC-R\n"
 	got := buf.String()
+	if got != want {
+		t.Errorf("got = %s; want %s", got, want)
+	}
+
+	// create fake tcp connection
+	buf.Reset()
+	conn := createFakeConn(12345, 45678)
+	for _, p := range conn {
+		packet = gopacket.NewPacket(p,
+			layers.LayerTypeEthernet, gopacket.Default)
+		handlePacket(assembler, packet)
+	}
+
+	// check results
+	want = "127.0.0.1:12345 -> 127.0.0.1:45678: Decline: " +
+		"Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
+		"Version: 1, Out of Sync: 0, Path: SMC-R, " +
+		"Peer ID: 9509@25:25:25:25:25:00, " +
+		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D)), " +
+		"Trailer: SMC-R\n"
+	got = buf.String()
 	if got != want {
 		t.Errorf("got = %s; want %s", got, want)
 	}
