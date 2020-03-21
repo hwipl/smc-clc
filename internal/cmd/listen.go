@@ -48,6 +48,18 @@ func handleTimer(assembler *tcpassembly.Assembler) {
 	}
 }
 
+// getFirstPcapInterface returns the first network interface found by pcap
+func getFirstPcapInterface() string {
+	ifs, err := pcap.FindAllDevs()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(ifs) > 0 {
+		return ifs[0].Name
+	}
+	return ""
+}
+
 // listenPrepare prepares the assembler and pcap handle for the listen function
 func listenPrepare() (*tcpassembly.Assembler, *pcap.Handle) {
 	// open pcap handle
@@ -60,6 +72,14 @@ func listenPrepare() (*tcpassembly.Assembler, *pcap.Handle) {
 		if *pcapTimeout > 0 {
 			timeout = time.Duration(*pcapTimeout) *
 				time.Millisecond
+		}
+
+		// set interface
+		if *pcapDevice == "" {
+			*pcapDevice = getFirstPcapInterface()
+			if *pcapDevice == "" {
+				log.Fatal("No network interface found")
+			}
 		}
 
 		// open device
