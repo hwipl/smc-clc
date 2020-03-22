@@ -295,55 +295,35 @@ func TestHandlePacket(t *testing.T) {
 	// init flow table
 	flows.init()
 
-	// create fake packet
-	packet := gopacket.NewPacket(createFakePacket(123, 456),
-		layers.LayerTypeEthernet, gopacket.Default)
+	// create test payload: clc decline message
+	declineMsg := "e2d4c3d904001c102525252525252500" +
+		"0303000000000000e2d4c3d9"
+	payload, err := hex.DecodeString(declineMsg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// handle packet
-	handlePacket(assembler, packet)
+	// create fake tcp connection with payload
+	client := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 12345, 100)
+	server := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 45678, 100)
+	conn := newCLCConn(client, server)
+	conn.connect()
+	conn.send(client, server, payload)
+	conn.disconnect()
+	for _, p := range conn.packets {
+		packet := gopacket.NewPacket(p,
+			layers.LayerTypeEthernet, gopacket.Default)
+		handlePacket(assembler, packet)
+	}
 
 	// check results
-	want := "127.0.0.1:123 -> 127.0.0.1:456: Decline: " +
+	want := "127.0.0.1:12345 -> 127.0.0.1:45678: Decline: " +
 		"Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
 		"Version: 1, Out of Sync: 0, Path: SMC-R, " +
 		"Peer ID: 9509@25:25:25:25:25:00, " +
 		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D)), " +
 		"Trailer: SMC-R\n"
 	got := buf.String()
-	if got != want {
-		t.Errorf("got = %s; want %s", got, want)
-	}
-
-	// create fake tcp connection
-	buf.Reset()
-	client := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 12345, 100)
-	server := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 45678, 100)
-	clcConn := newCLCConn(client, server)
-	clcConn.connect()
-
-	// create payload: clc decline message
-	declineMsg := "e2d4c3d904001c102525252525252500" +
-		"0303000000000000e2d4c3d9"
-	msg, err := hex.DecodeString(declineMsg)
-	if err != nil {
-		log.Fatal(err)
-	}
-	clcConn.send(client, server, msg)
-	clcConn.disconnect()
-	for _, p := range clcConn.packets {
-		packet = gopacket.NewPacket(p,
-			layers.LayerTypeEthernet, gopacket.Default)
-		handlePacket(assembler, packet)
-	}
-
-	// check results
-	want = "127.0.0.1:12345 -> 127.0.0.1:45678: Decline: " +
-		"Eyecatcher: SMC-R, Type: 4 (Decline), Length: 28, " +
-		"Version: 1, Out of Sync: 0, Path: SMC-R, " +
-		"Peer ID: 9509@25:25:25:25:25:00, " +
-		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D)), " +
-		"Trailer: SMC-R\n"
-	got = buf.String()
 	if got != want {
 		t.Errorf("got = %s; want %s", got, want)
 	}
