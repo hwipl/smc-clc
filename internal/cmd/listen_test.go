@@ -82,31 +82,94 @@ func createFakePacket(sport, dport layers.TCPPort) []byte {
 	return pktBuf.Bytes()
 }
 
-func createFakeConnPkt(eth layers.Ethernet, ip layers.IPv4,
-	sport, dport layers.TCPPort, SYN, ACK, FIN bool, seq, ack uint32,
-	options []layers.TCPOption, payload []byte) []byte {
+type clcPeer struct {
+	mac   net.HardwareAddr
+	ip    net.IP
+	port  uint16
+	seq   uint32
+	ack   uint32
+	flags struct {
+		syn bool
+		ack bool
+		fin bool
+	}
+	options []layers.TCPOption
+}
+
+func newCLCPeer(mac, ip string, port uint16, isn uint32) *clcPeer {
+	// parse mac address
+	macAddr, err := net.ParseMAC(mac)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// parse ip address
+	ipAddr := net.ParseIP(ip)
+
+	// create and return peer
+	peer := clcPeer{
+		mac:  macAddr,
+		ip:   ipAddr,
+		port: port,
+		seq:  isn,
+	}
+	return &peer
+}
+
+type clcConn struct {
+	client  *clcPeer
+	server  *clcPeer
+	packets [][]byte
+}
+
+func newCLCConn(client, server *clcPeer) *clcConn {
+	conn := clcConn{
+		client: client,
+		server: server,
+	}
+	return &conn
+}
+
+func (c *clcConn) createSegment(sender, receiver *clcPeer, payload []byte) {
 	// prepare creation of fake packet
 	opts := gopacket.SerializeOptions{
 		FixLengths:       true,
 		ComputeChecksums: true,
 	}
 
+	// create ethernet header
+	eth := layers.Ethernet{
+		SrcMAC:       sender.mac,
+		DstMAC:       receiver.mac,
+		EthernetType: layers.EthernetTypeIPv4,
+	}
+
+	// create ip header
+	ip := layers.IPv4{
+		Version:  4,
+		Flags:    layers.IPv4DontFragment,
+		Id:       1, // TODO: update? remove?
+		TTL:      64,
+		Protocol: layers.IPProtocolTCP,
+		SrcIP:    sender.ip,
+		DstIP:    receiver.ip,
+	}
 	// create tcp header
 	tcp := layers.TCP{
-		SrcPort: sport,
-		DstPort: dport,
-		SYN:     SYN,
-		ACK:     ACK,
-		FIN:     FIN,
-		Seq:     seq,
-		Ack:     ack,
+		SrcPort: layers.TCPPort(sender.port),
+		DstPort: layers.TCPPort(receiver.port),
+		SYN:     sender.flags.syn,
+		ACK:     sender.flags.ack,
+		FIN:     sender.flags.fin,
+		Seq:     sender.seq,
+		Ack:     sender.ack,
 		Window:  64000,
 	}
 	tcp.SetNetworkLayerForChecksum(&ip)
 
 	// add tcp options if present
-	if options != nil {
-		tcp.Options = options
+	if sender.options != nil {
+		tcp.Options = sender.options
 	}
 
 	// serialize packet to buffer
@@ -125,33 +188,16 @@ func createFakeConnPkt(eth layers.Ethernet, ip layers.IPv4,
 		log.Fatal(err)
 	}
 
-	// return buffer as bytes
-	return buf.Bytes()
+	// append packet to the list of all packets
+	packets := make([][]byte, len(c.packets)+1)
+	for i, p := range c.packets {
+		packets[i] = p
+	}
+	packets[len(packets)-1] = buf.Bytes()
+	c.packets = packets
 }
 
-func createFakeConn(cliPort, srvPort layers.TCPPort) [][]byte {
-	// create ethernet header
-	mac, err := net.ParseMAC("00:00:00:00:00:00")
-	if err != nil {
-		log.Fatal(err)
-	}
-	eth := layers.Ethernet{
-		SrcMAC:       mac,
-		DstMAC:       mac,
-		EthernetType: layers.EthernetTypeIPv4,
-	}
-
-	// create ip header
-	ip := layers.IPv4{
-		Version:  4,
-		Flags:    layers.IPv4DontFragment,
-		Id:       1,
-		TTL:      64,
-		Protocol: layers.IPProtocolTCP,
-		SrcIP:    net.IP{127, 0, 0, 1},
-		DstIP:    net.IP{127, 0, 0, 1},
-	}
-
+func (c *clcConn) connect() {
 	// create tcp option
 	options := []layers.TCPOption{
 		{
@@ -161,94 +207,76 @@ func createFakeConn(cliPort, srvPort layers.TCPPort) [][]byte {
 		},
 	}
 
-	// create packets of fake connection
-	packets := make([][]byte, 8)
-
 	// create fake SYN packet
-	isn := uint32(100)
-	sport := cliPort
-	dport := srvPort
-	SYN := true
-	ACK := false
-	FIN := false
-	seq := isn
-	ack := uint32(0)
-	packets[0] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
-		seq, ack, options, nil)
+	c.client.flags.syn = true
+	c.client.flags.ack = false
+	c.client.flags.fin = false
+	c.client.ack = uint32(0)
+	c.client.options = options
+	c.createSegment(c.client, c.server, nil)
+	c.client.seq += 1
 
 	// create fake SYN, ACK packet
-	sport = srvPort
-	dport = cliPort
-	SYN = true
-	ACK = true
-	seq = isn
-	ack = isn + 1
-	packets[1] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
-		seq, ack, options, nil)
+	c.server.flags.syn = true
+	c.server.flags.ack = true
+	c.server.flags.fin = false
+	c.server.ack = c.client.seq
+	c.server.options = options
+	c.createSegment(c.server, c.client, nil)
+	c.server.seq += 1
+
+	// remove options from client and server
+	c.client.options = nil
+	c.server.options = nil
 
 	// create fake ACK packet
-	sport = cliPort
-	dport = srvPort
-	SYN = false
-	ACK = true
-	seq = isn + 1
-	ack = isn + 1
-	packets[2] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
-		seq, ack, nil, nil)
+	c.client.flags.syn = false
+	c.client.flags.ack = true
+	c.client.flags.fin = false
+	c.client.ack = c.server.seq
+	c.createSegment(c.client, c.server, nil)
+}
 
-	// create payload: clc decline message
-	declineMsg := "e2d4c3d904001c102525252525252500" +
-		"0303000000000000e2d4c3d9"
-	msg, err := hex.DecodeString(declineMsg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func (c *clcConn) send(sender, receiver *clcPeer, payload []byte) {
 	// create fake payload packet
-	packets[3] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
-		seq, ack, nil, msg)
+	sender.flags.syn = false
+	sender.flags.ack = true
+	sender.flags.fin = false
+	sender.ack = receiver.seq
+	c.createSegment(sender, receiver, payload)
+	sender.seq += uint32(len(payload))
 
 	// create fake ACK packet
-	sport = srvPort
-	dport = cliPort
-	SYN = false
-	ACK = true
-	seq = isn + 1
-	ack = isn + 1 + uint32(len(msg))
-	packets[4] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
-		seq, ack, nil, nil)
+	receiver.flags.syn = false
+	receiver.flags.ack = true
+	receiver.flags.fin = false
+	receiver.ack = sender.seq
+	c.createSegment(receiver, sender, nil)
+}
+
+func (c *clcConn) disconnect() {
+	// create fake FIN, ACK packet
+	c.client.flags.syn = false
+	c.client.flags.ack = true
+	c.client.flags.fin = true
+	c.client.ack = c.server.seq
+	c.createSegment(c.client, c.server, nil)
+	c.client.seq += 1
 
 	// create fake FIN, ACK packet
-	sport = cliPort
-	dport = srvPort
-	FIN = true
-	ACK = true
-	seq = isn + 1 + uint32(len(msg))
-	ack = isn + 1
-	packets[5] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
-		seq, ack, nil, nil)
-
-	// create fake FIN, ACK packet
-	sport = srvPort
-	dport = cliPort
-	FIN = true
-	ACK = true
-	seq = isn + 1
-	ack = isn + 1 + uint32(len(msg)) + 1
-	packets[6] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
-		seq, ack, nil, nil)
+	c.server.flags.syn = false
+	c.server.flags.ack = true
+	c.server.flags.fin = true
+	c.server.ack = c.client.seq
+	c.createSegment(c.server, c.client, nil)
+	c.server.seq += 1
 
 	// create fake ACK packet
-	sport = cliPort
-	dport = srvPort
-	FIN = false
-	ACK = true
-	seq = isn + 1 + uint32(len(msg)) + 1
-	ack = isn + 1 + 1
-	packets[7] = createFakeConnPkt(eth, ip, sport, dport, SYN, ACK, FIN,
-		seq, ack, nil, nil)
-
-	return packets
+	c.client.flags.syn = false
+	c.client.flags.ack = true
+	c.client.flags.fin = false
+	c.client.ack = c.server.seq
+	c.createSegment(c.client, c.server, nil)
 }
 
 func TestHandlePacket(t *testing.T) {
@@ -288,8 +316,21 @@ func TestHandlePacket(t *testing.T) {
 
 	// create fake tcp connection
 	buf.Reset()
-	conn := createFakeConn(12345, 45678)
-	for _, p := range conn {
+	client := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 12345, 100)
+	server := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 45678, 100)
+	clcConn := newCLCConn(client, server)
+	clcConn.connect()
+
+	// create payload: clc decline message
+	declineMsg := "e2d4c3d904001c102525252525252500" +
+		"0303000000000000e2d4c3d9"
+	msg, err := hex.DecodeString(declineMsg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	clcConn.send(client, server, msg)
+	clcConn.disconnect()
+	for _, p := range clcConn.packets {
 		packet = gopacket.NewPacket(p,
 			layers.LayerTypeEthernet, gopacket.Default)
 		handlePacket(assembler, packet)
