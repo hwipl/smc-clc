@@ -344,16 +344,31 @@ func TestListenPcap(t *testing.T) {
 	}
 	defer os.Remove(tmpfile.Name())
 
-	// create fake packet
-	packet := createFakePacket(123, 456)
+	// create test payload: clc decline message
+	declineMsg := "e2d4c3d904001c102525252525252500" +
+		"0303000000000000e2d4c3d9"
+	payload, err := hex.DecodeString(declineMsg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// write fake packet to pcap file
+	// create fake tcp connection with payload
+	client := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 123, 100)
+	server := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 456, 100)
+	conn := newCLCConn(client, server)
+	conn.connect()
+	conn.send(client, server, payload)
+	conn.disconnect()
+
+	// write packets of fake tcp connection to pcap file
 	w := pcapgo.NewWriter(tmpfile)
 	w.WriteFileHeader(65536, layers.LinkTypeEthernet)
-	w.WritePacket(gopacket.CaptureInfo{
-		CaptureLength: len(packet),
-		Length:        len(packet),
-	}, packet)
+	for _, packet := range conn.packets {
+		w.WritePacket(gopacket.CaptureInfo{
+			CaptureLength: len(packet),
+			Length:        len(packet),
+		}, packet)
+	}
 	tmpfile.Close()
 
 	// test listen() with pcap file
