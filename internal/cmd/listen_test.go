@@ -19,69 +19,6 @@ import (
 	"github.com/hwipl/smc-clc/internal/clc"
 )
 
-func createFakePacket(sport, dport layers.TCPPort) []byte {
-	// prepare creation of fake packet
-	pktBuf := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	// create ethernet header
-	mac, err := net.ParseMAC("00:00:00:00:00:00")
-	if err != nil {
-		log.Fatal(err)
-	}
-	eth := layers.Ethernet{
-		SrcMAC:       mac,
-		DstMAC:       mac,
-		EthernetType: layers.EthernetTypeIPv4,
-	}
-
-	// create ip header
-	ip := layers.IPv4{
-		Version:  4,
-		Flags:    layers.IPv4DontFragment,
-		Id:       1,
-		TTL:      64,
-		Protocol: layers.IPProtocolTCP,
-		SrcIP:    net.IP{127, 0, 0, 1},
-		DstIP:    net.IP{127, 0, 0, 1},
-	}
-
-	// create tcp header with tcp option
-	tcp := layers.TCP{
-		SYN:     true,
-		ACK:     false,
-		SrcPort: sport,
-		DstPort: dport,
-		Options: []layers.TCPOption{
-			{
-				OptionType:   254,
-				OptionLength: 6,
-				OptionData:   clc.SMCREyecatcher,
-			},
-		},
-	}
-	tcp.SetNetworkLayerForChecksum(&ip)
-
-	// create payload: clc decline message
-	declineMsg := "e2d4c3d904001c102525252525252500" +
-		"0303000000000000e2d4c3d9"
-	msg, err := hex.DecodeString(declineMsg)
-	if err != nil {
-		log.Fatal(err)
-	}
-	payload := gopacket.Payload(msg)
-
-	// create fake packet
-	err = gopacket.SerializeLayers(pktBuf, opts, &eth, &ip, &tcp, payload)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return pktBuf.Bytes()
-}
-
 type clcPeer struct {
 	mac   net.HardwareAddr
 	ip    net.IP
