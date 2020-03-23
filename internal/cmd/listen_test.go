@@ -458,7 +458,7 @@ func TestListenLoopback(t *testing.T) {
 	*pcapFile = ""
 	*pcapDevice = "lo"
 	*pcapTimeout = 1
-	*pcapFilter = fmt.Sprintf("tcp and src port %d and dst port %d", sport,
+	*pcapFilter = fmt.Sprintf("tcp and port %d and port %d", sport,
 		dport)
 	assembler, pcapHandle := listenPrepare()
 	defer pcapHandle.Close()
@@ -483,18 +483,34 @@ func TestListenLoopback(t *testing.T) {
 		Halen:    6,
 	}
 
-	// create fake packet
-	packet := createFakePacket(layers.TCPPort(sport),
-		layers.TCPPort(dport))
-
-	// send fake packet
-	err = unix.Sendto(fd, packet, 0, &addr)
+	// create test payload: clc decline message
+	declineMsg := "e2d4c3d904001c102525252525252500" +
+		"0303000000000000e2d4c3d9"
+	payload, err := hex.DecodeString(declineMsg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// create fake tcp connection with payload
+	client := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", uint16(sport),
+		100)
+	server := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", uint16(dport),
+		100)
+	conn := newCLCConn(client, server)
+	conn.connect()
+	conn.send(client, server, payload)
+	conn.disconnect()
+
+	// send fake packet
+	for _, packet := range conn.packets {
+		err = unix.Sendto(fd, packet, 0, &addr)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	// handle packets with listen
-	*pcapMaxPkts = 1
+	*pcapMaxPkts = len(conn.packets)
 	*pcapMaxTime = 1
 	listenLoop(assembler, pcapHandle)
 
