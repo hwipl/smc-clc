@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"os"
 	"testing"
 
@@ -15,205 +14,9 @@ import (
 	"github.com/google/gopacket/pcapgo"
 	"github.com/google/gopacket/tcpassembly"
 
+	"github.com/hwipl/packet-go/pkg/tcp"
 	"github.com/hwipl/smc-clc/internal/clc"
 )
-
-type clcPeer struct {
-	mac   net.HardwareAddr
-	ip    net.IP
-	port  uint16
-	seq   uint32
-	ack   uint32
-	flags struct {
-		syn bool
-		ack bool
-		fin bool
-	}
-	options []layers.TCPOption
-}
-
-func newCLCPeer(mac, ip string, port uint16, isn uint32) *clcPeer {
-	// parse mac address
-	macAddr, err := net.ParseMAC(mac)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// parse ip address
-	ipAddr := net.ParseIP(ip)
-
-	// create and return peer
-	peer := clcPeer{
-		mac:  macAddr,
-		ip:   ipAddr,
-		port: port,
-		seq:  isn,
-	}
-	return &peer
-}
-
-type clcConn struct {
-	client  *clcPeer
-	server  *clcPeer
-	packets [][]byte
-}
-
-func newCLCConn(client, server *clcPeer) *clcConn {
-	conn := clcConn{
-		client: client,
-		server: server,
-	}
-	return &conn
-}
-
-func (c *clcConn) createSegment(sender, receiver *clcPeer, payload []byte) {
-	// prepare creation of fake packet
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	// create ethernet header
-	eth := layers.Ethernet{
-		SrcMAC:       sender.mac,
-		DstMAC:       receiver.mac,
-		EthernetType: layers.EthernetTypeIPv4,
-	}
-
-	// create ip header
-	ip := layers.IPv4{
-		Version:  4,
-		Flags:    layers.IPv4DontFragment,
-		Id:       1, // TODO: update? remove?
-		TTL:      64,
-		Protocol: layers.IPProtocolTCP,
-		SrcIP:    sender.ip,
-		DstIP:    receiver.ip,
-	}
-	// create tcp header
-	tcp := layers.TCP{
-		SrcPort: layers.TCPPort(sender.port),
-		DstPort: layers.TCPPort(receiver.port),
-		SYN:     sender.flags.syn,
-		ACK:     sender.flags.ack,
-		FIN:     sender.flags.fin,
-		Seq:     sender.seq,
-		Ack:     sender.ack,
-		Window:  64000,
-	}
-	tcp.SetNetworkLayerForChecksum(&ip)
-
-	// add tcp options if present
-	if sender.options != nil {
-		tcp.Options = sender.options
-	}
-
-	// serialize packet to buffer
-	var err error
-	buf := gopacket.NewSerializeBuffer()
-	if payload != nil {
-		// with payload
-		pl := gopacket.Payload(payload)
-		err = gopacket.SerializeLayers(buf, opts, &eth, &ip, &tcp,
-			pl)
-	} else {
-		// without payload
-		err = gopacket.SerializeLayers(buf, opts, &eth, &ip, &tcp)
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// append packet to the list of all packets
-	packets := make([][]byte, len(c.packets)+1)
-	for i, p := range c.packets {
-		packets[i] = p
-	}
-	packets[len(packets)-1] = buf.Bytes()
-	c.packets = packets
-}
-
-func (c *clcConn) connect() {
-	// create tcp option
-	options := []layers.TCPOption{
-		{
-			OptionType:   254,
-			OptionLength: 6,
-			OptionData:   clc.SMCREyecatcher,
-		},
-	}
-
-	// create fake SYN packet
-	c.client.flags.syn = true
-	c.client.flags.ack = false
-	c.client.flags.fin = false
-	c.client.ack = uint32(0)
-	c.client.options = options
-	c.createSegment(c.client, c.server, nil)
-	c.client.seq += 1
-
-	// create fake SYN, ACK packet
-	c.server.flags.syn = true
-	c.server.flags.ack = true
-	c.server.flags.fin = false
-	c.server.ack = c.client.seq
-	c.server.options = options
-	c.createSegment(c.server, c.client, nil)
-	c.server.seq += 1
-
-	// remove options from client and server
-	c.client.options = nil
-	c.server.options = nil
-
-	// create fake ACK packet
-	c.client.flags.syn = false
-	c.client.flags.ack = true
-	c.client.flags.fin = false
-	c.client.ack = c.server.seq
-	c.createSegment(c.client, c.server, nil)
-}
-
-func (c *clcConn) send(sender, receiver *clcPeer, payload []byte) {
-	// create fake payload packet
-	sender.flags.syn = false
-	sender.flags.ack = true
-	sender.flags.fin = false
-	sender.ack = receiver.seq
-	c.createSegment(sender, receiver, payload)
-	sender.seq += uint32(len(payload))
-
-	// create fake ACK packet
-	receiver.flags.syn = false
-	receiver.flags.ack = true
-	receiver.flags.fin = false
-	receiver.ack = sender.seq
-	c.createSegment(receiver, sender, nil)
-}
-
-func (c *clcConn) disconnect() {
-	// create fake FIN, ACK packet
-	c.client.flags.syn = false
-	c.client.flags.ack = true
-	c.client.flags.fin = true
-	c.client.ack = c.server.seq
-	c.createSegment(c.client, c.server, nil)
-	c.client.seq += 1
-
-	// create fake FIN, ACK packet
-	c.server.flags.syn = false
-	c.server.flags.ack = true
-	c.server.flags.fin = true
-	c.server.ack = c.client.seq
-	c.createSegment(c.server, c.client, nil)
-	c.server.seq += 1
-
-	// create fake ACK packet
-	c.client.flags.syn = false
-	c.client.flags.ack = true
-	c.client.flags.fin = false
-	c.client.ack = c.server.seq
-	c.createSegment(c.client, c.server, nil)
-}
 
 func TestHandlePacket(t *testing.T) {
 	// set output to a buffer, disable timestamps, reserved, dumps
@@ -239,14 +42,25 @@ func TestHandlePacket(t *testing.T) {
 		log.Fatal(err)
 	}
 
+	// create smc tcp option
+	var options = []layers.TCPOption{
+		{
+			OptionType:   254,
+			OptionLength: 6,
+			OptionData:   clc.SMCREyecatcher,
+		},
+	}
+
 	// create fake tcp connection with payload
-	client := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 12345, 100)
-	server := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 45678, 100)
-	conn := newCLCConn(client, server)
-	conn.connect()
-	conn.send(client, server, payload)
-	conn.disconnect()
-	for _, p := range conn.packets {
+	client := tcp.NewPeer("00:00:00:00:00:00", "127.0.0.1", 12345, 100)
+	server := tcp.NewPeer("00:00:00:00:00:00", "127.0.0.1", 45678, 100)
+	conn := tcp.NewConn(client, server)
+	conn.Options.SYN = options
+	conn.Options.SYNACK = options
+	conn.Connect()
+	conn.Send(client, server, payload)
+	conn.Disconnect()
+	for _, p := range conn.Packets {
 		packet := gopacket.NewPacket(p,
 			layers.LayerTypeEthernet, gopacket.Default)
 		handlePacket(assembler, packet)
@@ -288,18 +102,29 @@ func TestListenPcap(t *testing.T) {
 		log.Fatal(err)
 	}
 
+	// create smc tcp option
+	var options = []layers.TCPOption{
+		{
+			OptionType:   254,
+			OptionLength: 6,
+			OptionData:   clc.SMCREyecatcher,
+		},
+	}
+
 	// create fake tcp connection with payload
-	client := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 123, 100)
-	server := newCLCPeer("00:00:00:00:00:00", "127.0.0.1", 456, 100)
-	conn := newCLCConn(client, server)
-	conn.connect()
-	conn.send(client, server, payload)
-	conn.disconnect()
+	client := tcp.NewPeer("00:00:00:00:00:00", "127.0.0.1", 123, 100)
+	server := tcp.NewPeer("00:00:00:00:00:00", "127.0.0.1", 456, 100)
+	conn := tcp.NewConn(client, server)
+	conn.Options.SYN = options
+	conn.Options.SYNACK = options
+	conn.Connect()
+	conn.Send(client, server, payload)
+	conn.Disconnect()
 
 	// write packets of fake tcp connection to pcap file
 	w := pcapgo.NewWriter(tmpfile)
 	w.WriteFileHeader(65536, layers.LinkTypeEthernet)
-	for _, packet := range conn.packets {
+	for _, packet := range conn.Packets {
 		w.WritePacket(gopacket.CaptureInfo{
 			CaptureLength: len(packet),
 			Length:        len(packet),
