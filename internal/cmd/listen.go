@@ -9,7 +9,8 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/google/gopacket/tcpassembly"
-	"github.com/hwipl/smc-clc/internal/clc"
+
+	"github.com/hwipl/smc-go/pkg/clc"
 )
 
 // handlePacket handles a packet

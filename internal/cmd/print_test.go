@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/hwipl/smc-clc/internal/clc"
+	"github.com/hwipl/smc-go/pkg/clc"
 )
 
 func TestPrintCLC(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/gopacket"
-	"github.com/hwipl/smc-clc/internal/clc"
+	"github.com/hwipl/smc-go/pkg/clc"
 )
 
 // printCLC prints the CLC message

@@ -7,7 +7,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/tcpassembly"
 	"github.com/google/gopacket/tcpassembly/tcpreader"
-	"github.com/hwipl/smc-clc/internal/clc"
+	"github.com/hwipl/smc-go/pkg/clc"
 )
 
 const (

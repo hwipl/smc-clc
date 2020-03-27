@@ -15,7 +15,7 @@ import (
 	"github.com/google/gopacket/tcpassembly"
 
 	"github.com/hwipl/packet-go/pkg/tcp"
-	"github.com/hwipl/smc-clc/internal/clc"
+	"github.com/hwipl/smc-go/pkg/clc"
 )
 
 func TestHandlePacket(t *testing.T) {
