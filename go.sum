@@ -6,6 +6,8 @@ github.com/hwipl/smc-go v0.0.0-20200327213400-12aa08492b8f h1:afFZ9PPxEU8oiLy5yn
 github.com/hwipl/smc-go v0.0.0-20200327213400-12aa08492b8f/go.mod h1:eByx3jjMkUhNCbDtP0uyRK0nXHtyYkuO/XDVa45T7ig=
 github.com/hwipl/smc-go v0.0.0-20200328134220-57cfbbbdfc95 h1:0ZYom4NIOLv0J6iKWzY9H9FlCDW4gywpJJ5Y7OuFxp4=
 github.com/hwipl/smc-go v0.0.0-20200328134220-57cfbbbdfc95/go.mod h1:eByx3jjMkUhNCbDtP0uyRK0nXHtyYkuO/XDVa45T7ig=
+github.com/hwipl/smc-go v0.0.0-20200331192317-21f750acaf99 h1:az3/P4wudYIpxZ8EedgKGgX3aqaTtpWEZ//5UUjtScY=
+github.com/hwipl/smc-go v0.0.0-20200331192317-21f750acaf99/go.mod h1:eByx3jjMkUhNCbDtP0uyRK0nXHtyYkuO/XDVa45T7ig=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3 h1:0GoQqolDA55aaLxZyTzK/Y2ePZzZTUrRacwib7cNsYQ=
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
