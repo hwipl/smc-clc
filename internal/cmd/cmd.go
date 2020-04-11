@@ -21,10 +21,11 @@ var (
 	pcapFilter = flag.String("pcap-filter", "", "pcap packet filter")
 
 	// display variables
-	showReserved = flag.Bool("reserved", false,
+	showReserved = flag.Bool("show-reserved", false,
 		"print reserved values in messages")
-	showTimestamps = flag.Bool("timestamps", true, "print timestamps")
-	showDumps      = flag.Bool("dumps", false, "print message hex dumps")
+	showTimestamps = flag.Bool("show-timestamps", true, "print timestamps")
+	showDumps      = flag.Bool("show-hex", false,
+		"print message hex dumps")
 
 	// output, changed by http output
 	stdout     io.Writer = os.Stdout
