@@ -28,10 +28,11 @@ var (
 
 	// display variables
 	showReserved = flag.Bool("show-reserved", false,
-		"print reserved values in messages")
-	showTimestamps = flag.Bool("show-timestamps", true, "print timestamps")
-	showDumps      = flag.Bool("show-hex", false,
-		"print message hex dumps")
+		"show reserved message fields")
+	showTimestamps = flag.Bool("show-timestamps", true,
+		"show timestamps of messages")
+	showDumps = flag.Bool("show-hex", false,
+		"show hex dumps of messages")
 
 	// output, changed by http output
 	stdout     io.Writer = os.Stdout
