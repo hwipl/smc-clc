@@ -92,7 +92,7 @@ func (p *PcapListener) Prepare() {
 	// open pcap handle
 	var pcapErr error
 	var startText string
-	if *pcapFile == "" {
+	if p.File == "" {
 		// set pcap timeout
 		timeout := pcap.BlockForever
 		if p.Timeout > 0 {
@@ -118,8 +118,8 @@ func (p *PcapListener) Prepare() {
 	if pcapErr != nil {
 		log.Fatal(pcapErr)
 	}
-	if *pcapFilter != "" {
-		if err := p.pcapHandle.SetBPFFilter(*pcapFilter); err != nil {
+	if p.Filter != "" {
+		if err := p.pcapHandle.SetBPFFilter(p.Filter); err != nil {
 			log.Fatal(pcapErr)
 		}
 	}
