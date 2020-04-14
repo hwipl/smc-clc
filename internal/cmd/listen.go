@@ -13,8 +13,17 @@ import (
 	"github.com/hwipl/smc-go/pkg/clc"
 )
 
+type PcapHandler interface {
+	HandlePacket(gopacket.Packet)
+	HandleTimer()
+}
+
+type handler struct {
+	assembler *tcpassembly.Assembler
+}
+
 // handlePacket handles a packet
-func handlePacket(assembler *tcpassembly.Assembler, packet gopacket.Packet) {
+func (h *handler) HandlePacket(packet gopacket.Packet) {
 	// only handle tcp packets (with valid network layer)
 	if packet.NetworkLayer() == nil ||
 		packet.TransportLayer() == nil ||
@@ -32,94 +41,97 @@ func handlePacket(assembler *tcpassembly.Assembler, packet gopacket.Packet) {
 	tflow := packet.TransportLayer().TransportFlow()
 	if clc.CheckSMCOption(tcp) || flows.get(nflow, tflow) {
 		flows.add(nflow, tflow)
-		assembler.AssembleWithTimestamp(nflow, tcp,
+		h.assembler.AssembleWithTimestamp(nflow, tcp,
 			packet.Metadata().Timestamp)
 	}
 }
 
 // handleTimer handles a timer event
-func handleTimer(assembler *tcpassembly.Assembler) {
+func (h *handler) HandleTimer() {
 	flushedFmt := "Timer: flushed %d, closed %d connections\n"
 
 	// flush connections without activity in the past minute
-	flushed, closed := assembler.FlushOlderThan(time.Now().Add(
+	flushed, closed := h.assembler.FlushOlderThan(time.Now().Add(
 		-time.Minute))
 	if flushed > 0 {
 		fmt.Fprintf(stdout, flushedFmt, flushed, closed)
 	}
 }
 
-// getFirstPcapInterface returns the first network interface found by pcap
-func getFirstPcapInterface() string {
+type PcapListener struct {
+	pcapHandle *pcap.Handle
+
+	Handler PcapHandler
+
+	File    string
+	Device  string
+	Promisc bool
+	Snaplen int
+	Timeout time.Duration
+	Filter  string
+	MaxPkts int
+	MaxTime time.Duration
+}
+
+// getFirstPcapInterface sets the first network interface found by pcap
+func (p *PcapListener) getFirstPcapInterface() {
 	ifs, err := pcap.FindAllDevs()
 	if err != nil {
 		log.Fatal(err)
 	}
 	if len(ifs) > 0 {
-		return ifs[0].Name
+		p.Device = ifs[0].Name
+		return
 	}
-	return ""
+	log.Fatal("No network interface found")
 }
 
-// listenPrepare prepares the assembler and pcap handle for the listen function
-func listenPrepare() (*tcpassembly.Assembler, *pcap.Handle) {
+// Prepare prepares the pcap listener for the listen function
+func (p *PcapListener) Prepare() {
 	// open pcap handle
-	var pcapHandle *pcap.Handle
 	var pcapErr error
 	var startText string
 	if *pcapFile == "" {
 		// set pcap timeout
 		timeout := pcap.BlockForever
-		if *pcapTimeout > 0 {
-			timeout = time.Duration(*pcapTimeout) *
-				time.Millisecond
+		if p.Timeout > 0 {
+			timeout = p.Timeout
 		}
 
 		// set interface
-		if *pcapDevice == "" {
-			*pcapDevice = getFirstPcapInterface()
-			if *pcapDevice == "" {
-				log.Fatal("No network interface found")
-			}
+		if p.Device == "" {
+			p.getFirstPcapInterface()
 		}
 
 		// open device
-		pcapHandle, pcapErr = pcap.OpenLive(*pcapDevice,
-			int32(*pcapSnaplen), *pcapPromisc, timeout)
+		p.pcapHandle, pcapErr = pcap.OpenLive(p.Device,
+			int32(p.Snaplen), p.Promisc, timeout)
 		startText = fmt.Sprintf("Listening on interface %s:\n",
-			*pcapDevice)
+			p.Device)
 	} else {
 		// open pcap file
-		pcapHandle, pcapErr = pcap.OpenOffline(*pcapFile)
+		p.pcapHandle, pcapErr = pcap.OpenOffline(p.File)
 		startText = fmt.Sprintf("Reading packets from file %s:\n",
-			*pcapFile)
+			p.File)
 	}
 	if pcapErr != nil {
 		log.Fatal(pcapErr)
 	}
 	if *pcapFilter != "" {
-		if err := pcapHandle.SetBPFFilter(*pcapFilter); err != nil {
+		if err := p.pcapHandle.SetBPFFilter(*pcapFilter); err != nil {
 			log.Fatal(pcapErr)
 		}
 	}
 	fmt.Fprintf(stdout, startText)
-
-	// Set up assembly
-	streamFactory := &smcStreamFactory{}
-	streamPool := tcpassembly.NewStreamPool(streamFactory)
-	assembler := tcpassembly.NewAssembler(streamPool)
-
-	// init flow table
-	flows.init()
-
-	return assembler, pcapHandle
 }
 
-// listenLoop implements the listen loop for the listen function
-func listenLoop(assembler *tcpassembly.Assembler, pcapHandle *pcap.Handle) {
+// Loop implements the listen loop for the listen function
+func (p *PcapListener) Loop() {
+	defer p.pcapHandle.Close()
+
 	// Use the handle as a packet source to process all packets
-	packetSource := gopacket.NewPacketSource(pcapHandle,
-		pcapHandle.LinkType())
+	packetSource := gopacket.NewPacketSource(p.pcapHandle,
+		p.pcapHandle.LinkType())
 	packets := packetSource.Packets()
 
 	// setup timer
@@ -127,8 +139,8 @@ func listenLoop(assembler *tcpassembly.Assembler, pcapHandle *pcap.Handle) {
 
 	// set stop time if configured
 	stop := make(<-chan time.Time)
-	if *pcapMaxTime > 0 {
-		stop = time.After(time.Duration(*pcapMaxTime) * time.Second)
+	if p.MaxTime > 0 {
+		stop = time.After(p.MaxTime)
 	}
 
 	// handle packets and timer events
@@ -139,13 +151,13 @@ func listenLoop(assembler *tcpassembly.Assembler, pcapHandle *pcap.Handle) {
 			if packet == nil {
 				return
 			}
-			handlePacket(assembler, packet)
+			p.Handler.HandlePacket(packet)
 			count++
-			if *pcapMaxPkts > 0 && count == *pcapMaxPkts {
+			if p.MaxPkts > 0 && count == p.MaxPkts {
 				return
 			}
 		case <-ticker:
-			handleTimer(assembler)
+			p.Handler.HandleTimer()
 		case <-stop:
 			return
 		}
@@ -155,10 +167,32 @@ func listenLoop(assembler *tcpassembly.Assembler, pcapHandle *pcap.Handle) {
 
 // listen listens on the network interface and parses packets
 func listen() {
-	// get assembler and pcap handle
-	assembler, pcapHandle := listenPrepare()
-	defer pcapHandle.Close()
+	// Set up assembly
+	streamFactory := &smcStreamFactory{}
+	streamPool := tcpassembly.NewStreamPool(streamFactory)
+	assembler := tcpassembly.NewAssembler(streamPool)
+
+	// init flow table
+	flows.init()
+
+	// create handler
+	var handler handler
+	handler.assembler = assembler
+
+	// create listener
+	listener := PcapListener{
+		Handler: &handler,
+		File:    *pcapFile,
+		Device:  *pcapDevice,
+		Promisc: *pcapPromisc,
+		Snaplen: *pcapSnaplen,
+		Timeout: time.Duration(*pcapTimeout) * time.Millisecond,
+		Filter:  *pcapFilter,
+		MaxPkts: *pcapMaxPkts,
+		MaxTime: time.Duration(*pcapMaxTime) * time.Second,
+	}
 
 	// start listen loop
-	listenLoop(assembler, pcapHandle)
+	listener.Prepare()
+	listener.Loop()
 }

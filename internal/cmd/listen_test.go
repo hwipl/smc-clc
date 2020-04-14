@@ -34,6 +34,11 @@ func TestHandlePacket(t *testing.T) {
 	// init flow table
 	flows.init()
 
+	// init handler
+	handler := handler{
+		assembler: assembler,
+	}
+
 	// create test payload: clc decline message
 	declineMsg := "e2d4c3d904001c102525252525252500" +
 		"0303000000000000e2d4c3d9"
@@ -63,7 +68,7 @@ func TestHandlePacket(t *testing.T) {
 	for _, p := range conn.Packets {
 		packet := gopacket.NewPacket(p,
 			layers.LayerTypeEthernet, gopacket.Default)
-		handlePacket(assembler, packet)
+		handler.HandlePacket(packet)
 	}
 
 	// check results
