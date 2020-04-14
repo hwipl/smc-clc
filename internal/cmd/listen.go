@@ -62,6 +62,7 @@ type PcapListener struct {
 	pcapHandle *pcap.Handle
 
 	Handler PcapHandler
+	Timer   time.Duration
 
 	File    string
 	Device  string
@@ -135,7 +136,7 @@ func (p *PcapListener) Loop() {
 	packets := packetSource.Packets()
 
 	// setup timer
-	ticker := time.Tick(time.Minute)
+	ticker := time.Tick(p.Timer)
 
 	// set stop time if configured
 	stop := make(<-chan time.Time)
@@ -182,6 +183,7 @@ func listen() {
 	// create listener
 	listener := PcapListener{
 		Handler: &handler,
+		Timer:   time.Minute,
 		File:    *pcapFile,
 		Device:  *pcapDevice,
 		Promisc: *pcapPromisc,
