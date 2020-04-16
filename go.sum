@@ -2,8 +2,8 @@ github.com/google/gopacket v1.1.17 h1:rMrlX2ZY2UbvT+sdz3+6J+pp2z+msCq9MxTU6ymxbB
 github.com/google/gopacket v1.1.17/go.mod h1:UdDNZ1OO62aGYVnPhxT1U6aI7ukYtA/kB8vaU0diBUM=
 github.com/hwipl/packet-go v0.0.0-20200324140913-b3b354da9952 h1:ERApSZ8s4hmmQDTS70Qc+7cyGiBn0bL8B3kwR6P6cLw=
 github.com/hwipl/packet-go v0.0.0-20200324140913-b3b354da9952/go.mod h1:JGShxQAjtgsF/REGKv6OQnDQr0A090u/ldIRMAg0qVM=
-github.com/hwipl/smc-go v0.0.0-20200401135211-384d6b8d0667 h1:8Q2aVS6tQG/VbO19sA9ZigUlmVDvSGj3JkTsxx73rdQ=
-github.com/hwipl/smc-go v0.0.0-20200401135211-384d6b8d0667/go.mod h1:eByx3jjMkUhNCbDtP0uyRK0nXHtyYkuO/XDVa45T7ig=
+github.com/hwipl/smc-go v0.0.0-20200416153913-b5987aafcb99 h1:CmG9fGFdAd4weTNYunQy8ZS+Lr7EH/eOa78EZDbOnqY=
+github.com/hwipl/smc-go v0.0.0-20200416153913-b5987aafcb99/go.mod h1:eByx3jjMkUhNCbDtP0uyRK0nXHtyYkuO/XDVa45T7ig=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3 h1:0GoQqolDA55aaLxZyTzK/Y2ePZzZTUrRacwib7cNsYQ=
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
