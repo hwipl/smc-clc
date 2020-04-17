@@ -13,11 +13,6 @@ import (
 	"github.com/hwipl/smc-go/pkg/pcap"
 )
 
-type PcapHandler interface {
-	HandlePacket(gopacket.Packet)
-	HandleTimer()
-}
-
 type handler struct {
 	assembler *tcpassembly.Assembler
 }
