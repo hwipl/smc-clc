@@ -88,6 +88,7 @@ func TestListenPcap(t *testing.T) {
 	// set output to a buffer, disable timestamps, reserved, dumps
 	var buf bytes.Buffer
 	stdout = &buf
+	log.SetOutput(&buf)
 	*showTimestamps = false
 	*showReserved = false
 	*showDumps = false
@@ -150,7 +151,7 @@ func TestListenPcap(t *testing.T) {
 		"Peer ID: 9509@25:25:25:25:25:00, " +
 		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D)), " +
 		"Trailer: SMC-R\n"
-	got := buf.String()
+	got := buf.String()[20:] // ignore date and time
 	if got != want {
 		t.Errorf("got = %s; want %s", got, want)
 	}
@@ -169,7 +170,7 @@ func TestListenPcap(t *testing.T) {
 		"Peer ID: 9509@25:25:25:25:25:00, " +
 		"Peer Diagnosis: 0x3030000 (no SMC device found (R or D)), " +
 		"Trailer: SMC-R\n"
-	got = buf.String()
+	got = buf.String()[20:] // ignore date and time
 	if got != want {
 		t.Errorf("got = %s; want %s", got, want)
 	}
@@ -182,7 +183,7 @@ func TestListenPcap(t *testing.T) {
 	// check results
 	want = fmt.Sprintf("Reading packets from file %s:\n",
 		tmpfile.Name())
-	got = buf.String()
+	got = buf.String()[20:] // ignore date and time
 	if got != want {
 		t.Errorf("got = %s; want %s", got, want)
 	}
