@@ -29,20 +29,33 @@ $ smc-clc -i lo
 Options of the `smc-clc` command:
 
 ```
-  -dumps
-        print message hex dumps
-  -http string
-        use http server and set listen address (e.g.: :8000)
-  -i string
-        the interface to listen on (default "eth0")
-  -promisc
-        promiscuous mode (default true)
-  -reserved
-        print reserved values in messages
-  -snaplen int
-        pcap snaplen (default 2048)
-  -timestamps
-        print timestamps (default true)
+  -f file
+        read packets from a pcap file and set it to file
+  -http address
+        use http server output and listen on address (e.g.: :8000 or
+        127.0.0.1:8080)
+  -i interface
+        read packets from a network interface (default) and set it to interface
+  -pcap-filter filter
+        set pcap packet filter to filter (e.g.: "not port 22")
+  -pcap-maxpkts number
+        set maximum packets to capture to number (may require pcap-timeout
+        argument)
+  -pcap-maxtime seconds
+        set maximum capturing time to seconds (may require pcap-timeout
+        argument)
+  -pcap-promisc
+        set network interface to promiscuous mode (default true)
+  -pcap-snaplen bytes
+        set pcap snaplen to bytes (default 2048)
+  -pcap-timeout milliseconds
+        set pcap timeout to milliseconds
+  -show-hex
+        show hex dumps of messages
+  -show-reserved
+        show reserved message fields
+  -show-timestamps
+        show timestamps of messages (default true)
 ```
 
 ## Examples
