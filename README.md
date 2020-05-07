@@ -16,17 +16,7 @@ $ go get github.com/hwipl/smc-clc/cmd/smc-clc
 
 ## Usage
 
-You can run smc-clc with the `smc-clc` command. Make sure your user has the
-permission to capture traffic on the network interface.
-
-You can specify the network interface with the option `-i`. For example, you
-can specify the loopback interface with:
-
-```console
-$ smc-clc -i lo
-```
-
-Options of the `smc-clc` command:
+You can run `smc-clc` with the following command line arguments:
 
 ```
   -f file
@@ -60,7 +50,25 @@ Options of the `smc-clc` command:
 
 ## Examples
 
-Regular output of a SMC handshake over IPv4 on the loopback interface:
+You can specify the network interface with the command line argument `-i`.
+Make sure your user has the permission to capture traffic on the network
+interface. For example, you can capture packets on the loopback interface with
+the following command as user root:
+
+```console
+# smc-clc -i lo
+```
+
+Alternatively, you can read packets from a pcap file with the command line
+argument `-f`. For example you can read the packets from pcap file `dump.pcap`
+with the following command:
+
+```console
+$ smc-clc -f dump.pcap
+```
+
+The regular output of, for example, a SMC handshake over IPv4 on the loopback
+interface looks like this:
 
 ```console
 $ sudo ./smc-clc -i lo
@@ -86,10 +94,12 @@ RMB Virtual Address: 0xf0a40000, Packet Sequence Number: 887204,
 Trailer: SMC-R
 ```
 
-The output of the same SMC handshake with enabled hex dumps of the messages:
+You can enable hex dumps in the output with the command line argument
+`-show-hex`. The output of the same SMC handshake as above with enabled hex
+dumps of the messages looks like this:
 
 ```console
-$ sudo ./smc-clc -i lo -dumps
+$ sudo ./smc-clc -i lo -show-hex
 Starting to listen on interface lo.
 16:17:14.341225 127.0.0.1:60294 -> 127.0.0.1:50000: Proposal: Eyecatcher: SMC-R,
 Type: 1 (Proposal), Length: 52, Version: 1, Flag: 0, Path: SMC-R,
