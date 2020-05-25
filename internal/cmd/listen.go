@@ -9,8 +9,8 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/tcpassembly"
 
+	"github.com/hwipl/packet-go/pkg/pcap"
 	"github.com/hwipl/smc-go/pkg/clc"
-	"github.com/hwipl/smc-go/pkg/pcap"
 )
 
 type handler struct {
