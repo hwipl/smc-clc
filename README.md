@@ -11,7 +11,7 @@ You can download and install smc-clc with its dependencies to your GOPATH or
 GOBIN with the go tool:
 
 ```console
-$ go get github.com/hwipl/smc-clc/cmd/smc-clc
+$ go install github.com/hwipl/smc-clc/cmd/smc-clc
 ```
 
 ## Usage
