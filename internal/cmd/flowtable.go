@@ -3,7 +3,7 @@ package cmd
 import (
 	"sync"
 
-	"github.com/google/gopacket"
+	"github.com/gopacket/gopacket"
 )
 
 var (

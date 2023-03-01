@@ -9,10 +9,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcapgo"
-	"github.com/google/gopacket/tcpassembly"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
+	"github.com/gopacket/gopacket/pcapgo"
+	"github.com/gopacket/gopacket/tcpassembly"
 
 	"github.com/hwipl/packet-go/pkg/tcp"
 	"github.com/hwipl/smc-go/pkg/clc"

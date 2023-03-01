@@ -3,12 +3,12 @@ module github.com/hwipl/smc-clc
 go 1.18
 
 require (
-	github.com/google/gopacket v1.1.19
-	github.com/hwipl/packet-go v0.0.0-20220422075121-ba533054c860
-	github.com/hwipl/smc-go v0.0.0-20220421133409-bba6dd19fff6
+	github.com/gopacket/gopacket v1.0.1-0.20230225095122-6457da64b08f
+	github.com/hwipl/packet-go v0.0.0-20230226103641-5b033f860f66
+	github.com/hwipl/smc-go v0.0.0-20230301081005-d8dcd85fcf09
 )
 
 require (
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
-	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 )

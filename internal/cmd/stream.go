@@ -4,9 +4,9 @@ import (
 	"io"
 	"log"
 
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/tcpassembly"
-	"github.com/google/gopacket/tcpassembly/tcpreader"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/tcpassembly"
+	"github.com/gopacket/gopacket/tcpassembly/tcpreader"
 	"github.com/hwipl/smc-go/pkg/clc"
 )
 
